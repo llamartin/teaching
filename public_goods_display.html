@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Public Goods Game</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f4;
+    --ink: #1a1714;
+    --muted: #9b9189;
+    --rule: #d8d2c8;
+    --set-a: #1a1714;
+    --set-b: #c0392b;
+    --set-c: #2c6e49;
+    --bar-a: #1a1714;
+    --bar-b: #c0392b;
+    --bar-c: #2c6e49;
+    --modal-bg: rgba(26,23,20,0.85);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    padding: 20px 48px 16px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+  }
+
+  .title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  .subtitle {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Main area */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    padding: 28px 48px 0;
+    gap: 20px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Chart */
+  .chart-area {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  svg#mainchart {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Bar strip at bottom */
+  .bar-strip {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    padding-bottom: 20px;
+    height: 140px;
+    flex-shrink: 0;
+  }
+
+  .set-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex: 1;
+    padding: 0 6px;
+    position: relative;
+  }
+
+  .set-group:not(:last-child) {
+    border-right: 1px solid var(--rule);
+    margin-right: 6px;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bar-outer {
+    width: 100%;
+    height: 80px;
+    background: #ebe6df;
+    border-radius: 3px 3px 0 0;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-inner {
+    width: 100%;
+    height: 0%;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.7s cubic-bezier(.4,0,.2,1);
+    position: relative;
+  }
+
+  .bar-inner.current-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.25);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+
+  .bar-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .bar-value {
+    font-size: 0.7rem;
+    font-weight: 500;
+    min-height: 14px;
+    color: var(--ink);
+  }
+
+  .set-label-under {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  .set-label-under.visible { opacity: 1; }
+
+  /* Footer: input row */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 14px 48px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+    background: var(--bg);
+  }
+
+  .round-indicator {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    white-space: nowrap;
+    min-width: 140px;
+  }
+
+  .round-indicator .r-num {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  footer form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+
+  footer label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  footer input[type=number] {
+    width: 100px;
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  footer input[type=number]:focus { border-color: var(--ink); }
+  footer input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .btn-record {
+    padding: 9px 22px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-record:hover { opacity: 0.8; }
+  .btn-record:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .btn-undo {
+    padding: 9px 16px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-undo:hover { border-color: var(--muted); color: var(--ink); }
+  .btn-undo:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  .err { font-size: 0.68rem; color: #c0392b; margin-left: 4px; }
+
+  .players-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  .players-wrap input[type=number] {
+    width: 60px;
+    padding: 5px 8px;
+    font-size: 0.85rem;
+  }
+
+  /* SET REVEAL MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--modal-bg);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 56px 80px;
+    text-align: center;
+    animation: reveal 0.5s cubic-bezier(.2,.8,.4,1) both;
+  }
+
+  @keyframes reveal {
+    from { opacity: 0; transform: scale(0.92) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .modal-set-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .modal-avg {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  .modal-avg strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .modal-close {
+    padding: 10px 28px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+
+  .modal-close:hover { opacity: 0.8; }
+
+  /* Done state */
+  .done-banner {
+    display: none;
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .done-banner.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="title">Public Goods Game</span>
+  <span class="subtitle">Tokens in the pot — per round</span>
+</header>
+
+<div class="main">
+  <div class="chart-area">
+    <svg id="mainchart" viewBox="0 0 900 340" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="bar-strip">
+    <div class="set-group" id="set-group-0">
+      <!-- bars injected -->
+      <span class="set-label-under" id="set-lbl-0" style="color:var(--set-a)">Set A</span>
+    </div>
+    <div class="set-group" id="set-group-1">
+      <span class="set-label-under" id="set-lbl-1" style="color:var(--set-b)">Set B</span>
+    </div>
+    <div class="set-group" id="set-group-2">
+      <span class="set-label-under" id="set-lbl-2" style="color:var(--set-c)">Set C</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="round-indicator">
+    Round<br><span class="r-num" id="r-num">1</span>
+  </div>
+
+  <form onsubmit="return false;">
+    <label>Tokens in pot:</label>
+    <input type="number" id="pot-input" min="0" placeholder="—" autofocus>
+    <button class="btn-record" id="btn-rec" onclick="recordRound()">Record ↵</button>
+    <button class="btn-undo" id="btn-undo" onclick="undoRound()" disabled>Undo</button>
+    <span class="err" id="err"></span>
+  </form>
+
+  <div class="players-wrap">
+    <label>Students:</label>
+    <input type="number" id="n-players" min="1" max="500" value="30">
+  </div>
+
+  <span class="done-banner" id="done-banner">All rounds complete.</span>
+</footer>
+
+<!-- Set reveal modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-eyebrow">Set complete</div>
+    <div class="modal-set-name" id="modal-set-name"></div>
+    <div class="modal-avg" id="modal-avg"></div>
+    <button class="modal-close" onclick="closeModal()">Continue →</button>
+  </div>
+</div>
+
+<script>
+const TOTAL = 15;
+const PER_SET = 5;
+const SET_NAMES = ['Set A', 'Set B', 'Set C'];
+const SET_COLORS = ['#1a1714', '#c0392b', '#2c6e49'];
+const BAR_COLORS = ['#1a1714', '#c0392b', '#2c6e49'];
+
+let data = Array(TOTAL).fill(null);
+let currentRound = 0;
+let numPlayers = 30;
+
+function setOf(r) { return Math.floor(r / PER_SET); }
+function roundInSet(r) { return r % PER_SET; }
+
+// ---- Build bar strip ----
+function buildBars() {
+  for (let s = 0; s < 3; s++) {
+    const group = document.getElementById(`set-group-${s}`);
+    // remove old bar-cols
+    group.querySelectorAll('.bar-col').forEach(el => el.remove());
+    for (let i = 0; i < PER_SET; i++) {
+      const r = s * PER_SET + i;
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      col.innerHTML = `
+        <div class="bar-value" id="bv-${r}"></div>
+        <div class="bar-outer">
+          <div class="bar-inner" id="bi-${r}" style="background:${BAR_COLORS[s]}"></div>
+        </div>
+        <div class="bar-label">R${r+1}</div>
+      `;
+      group.insertBefore(col, group.querySelector('.set-label-under'));
+    }
+  }
+}
+
+function updateBars() {
+  const maxPot = numPlayers * 2;
+  for (let r = 0; r < TOTAL; r++) {
+    const bi = document.getElementById(`bi-${r}`);
+    const bv = document.getElementById(`bv-${r}`);
+    if (data[r] !== null) {
+      bi.style.height = Math.min(100, (data[r] / maxPot) * 100) + '%';
+      bv.textContent = data[r];
+      bi.classList.remove('current-pulse');
+    } else if (r === currentRound) {
+      bi.style.height = '4px';
+      bv.textContent = '';
+      bi.classList.add('current-pulse');
+    } else {
+      bi.style.height = '0%';
+      bv.textContent = '';
+      bi.classList.remove('current-pulse');
+    }
+  }
+  // set labels
+  for (let s = 0; s < 3; s++) {
+    const setDone = data[(s+1)*PER_SET - 1] !== null;
+    document.getElementById(`set-lbl-${s}`).classList.toggle('visible', setDone);
+  }
+}
+
+// ---- Chart ----
+function renderChart() {
+  const svg = document.getElementById('mainchart');
+  const W = 900, H = 340;
+  const ml = 52, mr = 20, mt = 24, mb = 36;
+  const pw = W - ml - mr, ph = H - mt - mb;
+  const maxY = numPlayers * 2;
+
+  function xOf(r) { return ml + (r / (TOTAL - 1)) * pw; }
+  function yOf(v) { return mt + ph - (v / maxY) * ph; }
+
+  let html = '';
+
+  // Y grid
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = mt + (i / steps) * ph;
+    const v = Math.round(maxY * (1 - i/steps));
+    html += `<line x1="${ml}" y1="${y}" x2="${W-mr}" y2="${y}" stroke="#e5e0d8" stroke-width="1"/>`;
+    html += `<text x="${ml-8}" y="${y+4}" text-anchor="end" font-family="DM Mono,monospace" font-size="11" fill="#9b9189">${v}</text>`;
+  }
+
+  // X labels
+  for (let r = 0; r < TOTAL; r++) {
+    const x = xOf(r);
+    html += `<text x="${x}" y="${H-mb+18}" text-anchor="middle" font-family="DM Mono,monospace" font-size="10" fill="#9b9189">${r+1}</text>`;
+  }
+
+  // Set separators (between sets)
+  for (let s = 1; s < 3; s++) {
+    const x = (xOf(s*5-1) + xOf(s*5)) / 2;
+    html += `<line x1="${x}" y1="${mt}" x2="${x}" y2="${mt+ph}" stroke="#d8d2c8" stroke-width="1" stroke-dasharray="5,4"/>`;
+  }
+
+  // Lines + dots per set
+  for (let s = 0; s < 3; s++) {
+    const color = SET_COLORS[s];
+    let d = '';
+    let hasAny = false;
+    for (let i = 0; i < PER_SET; i++) {
+      const r = s * PER_SET + i;
+      if (data[r] !== null) {
+        const x = xOf(r), y = yOf(data[r]);
+        d += hasAny ? ` L ${x} ${y}` : `M ${x} ${y}`;
+        hasAny = true;
+      }
+    }
+    if (d) html += `<path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+    for (let i = 0; i < PER_SET; i++) {
+      const r = s * PER_SET + i;
+      if (data[r] !== null) {
+        html += `<circle cx="${xOf(r)}" cy="${yOf(data[r])}" r="6" fill="${color}" stroke="#faf8f4" stroke-width="2.5"/>`;
+        // value label above
+        html += `<text x="${xOf(r)}" y="${yOf(data[r])-12}" text-anchor="middle" font-family="DM Mono,monospace" font-size="11" font-weight="500" fill="${color}">${data[r]}</text>`;
+      }
+    }
+  }
+
+  // Axes
+  html += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+ph}" stroke="#d8d2c8" stroke-width="1"/>`;
+  html += `<line x1="${ml}" y1="${mt+ph}" x2="${W-mr}" y2="${mt+ph}" stroke="#d8d2c8" stroke-width="1"/>`;
+
+  // Set name labels (appear when set done)
+  for (let s = 0; s < 3; s++) {
+    if (data[(s+1)*PER_SET - 1] !== null) {
+      const midR = s * PER_SET + 2;
+      const x = xOf(midR);
+      html += `<text x="${x}" y="${mt - 6}" text-anchor="middle" font-family="DM Mono,monospace" font-size="10" letter-spacing="2" fill="${SET_COLORS[s]}" opacity="0.7" text-transform="uppercase">${SET_NAMES[s]}</text>`;
+    }
+  }
+
+  svg.innerHTML = html;
+}
+
+// ---- Record ----
+function recordRound() {
+  if (currentRound >= TOTAL) return;
+  const inp = document.getElementById('pot-input');
+  const err = document.getElementById('err');
+  const val = parseInt(inp.value);
+  const max = numPlayers * 2;
+
+  if (isNaN(val) || val < 0) { err.textContent = 'Enter a number ≥ 0'; return; }
+  if (val > max) { err.textContent = `Max is ${max} (${numPlayers}×2)`; return; }
+  err.textContent = '';
+
+  data[currentRound] = val;
+  const justFinished = currentRound;
+  currentRound++;
+
+  // Lock players after first
+  document.getElementById('n-players').disabled = true;
+
+  inp.value = '';
+  inp.focus();
+
+  document.getElementById('btn-undo').disabled = false;
+
+  if (currentRound >= TOTAL) {
+    document.getElementById('btn-rec').disabled = true;
+    document.getElementById('done-banner').classList.add('show');
+  }
+
+  updateRoundLabel();
+  updateBars();
+  renderChart();
+
+  // Show modal if end of a set
+  if ((justFinished + 1) % PER_SET === 0) {
+    const s = Math.floor(justFinished / PER_SET);
+    const setData = data.slice(s * PER_SET, (s+1) * PER_SET).filter(v => v !== null);
+    const avg = (setData.reduce((a,b) => a+b, 0) / setData.length).toFixed(1);
+    document.getElementById('modal-set-name').textContent = SET_NAMES[s];
+    document.getElementById('modal-set-name').style.color = SET_COLORS[s];
+    document.getElementById('modal-avg').innerHTML = `Average tokens in pot: <strong>${avg}</strong> per round`;
+    document.getElementById('modal').classList.add('show');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('pot-input').focus();
+}
+
+// ---- Undo ----
+function undoRound() {
+  if (currentRound === 0) return;
+  currentRound--;
+  data[currentRound] = null;
+  document.getElementById('btn-rec').disabled = false;
+  document.getElementById('done-banner').classList.remove('show');
+  if (currentRound === 0) {
+    document.getElementById('btn-undo').disabled = true;
+    document.getElementById('n-players').disabled = false;
+  }
+  updateRoundLabel();
+  updateBars();
+  renderChart();
+}
+
+function updateRoundLabel() {
+  const label = currentRound < TOTAL ? currentRound + 1 : TOTAL;
+  document.getElementById('r-num').textContent = label;
+}
+
+document.getElementById('n-players').addEventListener('input', () => {
+  numPlayers = parseInt(document.getElementById('n-players').value) || 1;
+  renderChart();
+  updateBars();
+});
+
+document.getElementById('pot-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') recordRound();
+});
+
+// Init
+numPlayers = 30;
+buildBars();
+updateBars();
+renderChart();
+</script>
+</body>
+</html>
