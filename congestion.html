@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Congestion pricing instruments</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --text: #1a1a18;
+  --text2: #6b6b66;
+  --text3: #9b9b95;
+  --border: #e2e0d8;
+  --border2: #d0cec6;
+  --high-bg: #FEF1F0;
+  --high-text: #9B2C2C;
+  --high-border: #F5C1C1;
+  --low-bg: #F0F7EE;
+  --low-text: #2D6A1E;
+  --low-border: #C0DD97;
+  --med-bg: #FFF4E6;
+  --med-text: #9A5B13;
+  --med-border: #FAC775;
+  --t1-bg: #FFF8EB;
+  --t1-text: #854F0B;
+  --t1-border: #FAC775;
+  --t2-bg: #F3F1FE;
+  --t2-text: #534AB7;
+  --t2-border: #CECBF6;
+  --ok-bg: #FFFFFF;
+  --accent: #2C5282;
+  --reveal-bg: #F5F4F0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+h1 {
+  font-family: 'Source Serif 4', serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: var(--text2);
+  margin-bottom: 1.75rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab:hover { color: var(--text); }
+
+.tab.active {
+  color: var(--text);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text);
+}
+
+.params {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.8rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+.params strong { color: var(--text); font-weight: 500; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.tbl-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  min-width: 680px;
+}
+
+thead th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  padding: 0.7rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+thead th:first-child {
+  text-align: left;
+  padding-left: 1rem;
+  min-width: 200px;
+}
+
+thead th:nth-child(2) { min-width: 80px; }
+
+.th-sub {
+  display: block;
+  font-weight: 400;
+  font-size: 0.68rem;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+
+tbody td {
+  padding: 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+tbody td:first-child {
+  text-align: left;
+  padding-left: 1rem;
+  font-weight: 500;
+}
+
+.driver-sub {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-top: 1px;
+}
+
+.cong-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+
+.cong-high {
+  background: var(--high-bg);
+  color: var(--high-text);
+  border: 1px solid var(--high-border);
+}
+
+.cong-low {
+  background: var(--low-bg);
+  color: var(--low-text);
+  border: 1px solid var(--low-border);
+}
+
+.cong-med {
+  background: var(--med-bg);
+  color: var(--med-text);
+  border: 1px solid var(--med-border);
+}
+
+.hidden-cell {
+  cursor: pointer;
+  user-select: none;
+}
+
+.hidden-cell .cover {
+  display: inline-block;
+  background: var(--reveal-bg);
+  border: 1px dashed var(--border2);
+  border-radius: 6px;
+  padding: 0.2rem 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text3);
+  transition: all 0.15s;
+}
+
+.hidden-cell:hover .cover {
+  background: #EDECE6;
+  border-color: var(--text3);
+  color: var(--text2);
+}
+
+.hidden-cell.revealed .cover { display: none; }
+
+.hidden-cell .value {
+  display: none;
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text);
+  animation: fadeUp 0.25s ease;
+}
+
+.hidden-cell.revealed .value { display: inline-block; }
+
+.err-cell {
+  transition: background 0.4s, box-shadow 0.4s;
+}
+
+.err-cell.show-t1 {
+  background: var(--t1-bg);
+  box-shadow: inset 0 0 0 1px var(--t1-border);
+}
+
+.err-cell.show-t2 {
+  background: var(--t2-bg);
+  box-shadow: inset 0 0 0 1px var(--t2-border);
+}
+
+.err-label {
+  display: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-top: 2px;
+  animation: fadeUp 0.3s ease;
+}
+
+.show-t1 .err-label.is-t1,
+.show-t2 .err-label.is-t2 {
+  display: block;
+}
+
+.err-label.is-t1 { color: var(--t1-text); }
+.err-label.is-t2 { color: var(--t2-text); }
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.ctrl-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.ctrl-btn:hover { background: var(--bg); border-color: var(--border2); }
+
+.ctrl-btn.active-t1 {
+  background: var(--t1-bg);
+  border-color: var(--t1-border);
+  color: var(--t1-text);
+}
+
+.ctrl-btn.active-t2 {
+  background: var(--t2-bg);
+  border-color: var(--t2-border);
+  color: var(--t2-text);
+}
+
+.ctrl-btn.reveal-all {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.ctrl-btn.reveal-all:hover { opacity: 0.85; }
+
+.ctrl-btn.reset-btn {
+  color: var(--text3);
+  border-style: dashed;
+}
+
+.ctrl-btn.active-fig {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.legend {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  font-size: 0.78rem;
+  color: var(--text2);
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leg-sq {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.summary-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.sum-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  min-width: 130px;
+  flex: 1;
+}
+
+.sum-card .nm { font-weight: 600; font-size: 0.78rem; margin-bottom: 0.15rem; }
+.sum-card .t1c { color: var(--t1-text); font-size: 0.75rem; }
+.sum-card .t2c { color: var(--t2-text); font-size: 0.75rem; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .container { padding: 1.25rem 1rem; }
+  h1 { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Congestion pricing instruments</h1>
+  <p class="subtitle">ECON20004 Environmental economics and policy</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('charges')">Charges</button>
+    <button class="tab" onclick="showPage('figure')">Externalities</button>
+  </div>
+
+  <div class="params">
+    <strong>All drivers travel 1 km.</strong><br>
+    Fuel consumption &mdash; regular car: 10 L/100km &bull; hybrid: 5 L/100km &bull; gas guzzler: 15 L/100km
+  </div>
+
+  <div id="page-charges" class="page active">
+    <div class="controls">
+      <button class="ctrl-btn reveal-all" onclick="revealAllCharges()">Reveal all</button>
+      <button class="ctrl-btn reset-btn" onclick="resetCharges()">Reset</button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table id="tbl-charges">
+        <thead>
+          <tr>
+            <th>Driver (1 km)</th>
+            <th>Congestion</th>
+            <th>Fuel tax<span class="th-sub">(50c/L)</span></th>
+            <th>VKT<span class="th-sub">(3c/km)</span></th>
+            <th>Cordon<span class="th-sub">($5 entry)</span></th>
+            <th>Peak entry<span class="th-sub">($8 peak, $0 off-peak)</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-charges"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="page-figure" class="page">
+    <div class="controls" id="fig-btns"></div>
+
+    <div class="legend" id="fig-legend" style="display:none;">
+      <span class="leg-item"><span class="leg-sq" style="background:#FEF1F0;border:1px solid #F5C1C1;"></span>High charge</span>
+      <span class="leg-item"><span class="leg-sq" style="background:#FFF4E6;border:1px solid #FAC775;"></span>Moderate charge</span>
+      <span class="leg-item"><span class="leg-sq" style="background:#F0F7EE;border:1px solid #C0DD97;"></span>Low charge</span>
+      <span class="leg-item"><span class="leg-sq" style="background:#F1EFE8;border:1px solid #D3D1C7;"></span>Zero</span>
+    </div>
+
+    <div style="display:flex;gap:1.25rem;align-items:flex-start;">
+      <div style="position:relative;width:100%;max-width:720px;flex-shrink:0;">
+        <canvas id="fig-canvas" width="720" height="520"></canvas>
+      </div>
+      <div id="fig-drivers-list" style="min-width:180px;padding-top:0.5rem;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const drivers = [
+  { id: 1, label: 'Regular car', sub: 'Suburbs → CBD, peak', cong: 'high', ghg: 'med' },
+  { id: 2, label: 'Hybrid', sub: 'Suburbs → CBD, peak', cong: 'high', ghg: 'low' },
+  { id: 3, label: 'Hybrid', sub: 'Suburbs → CBD, off-peak', cong: 'low', ghg: 'low' },
+  { id: 4, label: 'Hybrid', sub: 'Within CBD, peak', cong: 'high', ghg: 'low' },
+  { id: 5, label: 'Gas guzzler', sub: 'Within CBD, peak', cong: 'high', ghg: 'high' },
+  { id: 6, label: 'Gas guzzler', sub: 'Rural, any time', cong: 'low', ghg: 'high' }
+];
+
+const vals = {
+  fuel:   { 1: '5c', 2: '2.5c', 3: '2.5c', 4: '2.5c', 5: '7.5c', 6: '7.5c' },
+  vkt:    { 1: '3c', 2: '3c', 3: '3c', 4: '3c', 5: '3c', 6: '3c' },
+  cordon: { 1: '500c', 2: '500c', 3: '500c', 4: '0', 5: '0', 6: '0' },
+  entry:  { 1: '800c', 2: '800c', 3: '0', 4: '0', 5: '0', 6: '0' }
+};
+
+const instKeys = ['fuel', 'vkt', 'cordon', 'entry'];
+const instNames = { fuel: 'Fuel tax', vkt: 'VKT', cordon: 'Cordon', entry: 'Peak entry' };
+
+function congPill(c) {
+  if (c === 'high') return '<span class="cong-pill cong-high">High</span>';
+  if (c === 'med') return '<span class="cong-pill cong-med">Med</span>';
+  return '<span class="cong-pill cong-low">Low</span>';
+}
+
+function buildChargesTable() {
+  const tbody = document.getElementById('tbody-charges');
+  let h = '';
+  drivers.forEach(d => {
+    h += '<tr>';
+    h += '<td>' + d.id + '. ' + d.label + '<span class="driver-sub">' + d.sub + '</span></td>';
+    h += '<td class="hidden-cell" onclick="revealCell(this)">';
+    h += '<span class="cover">?</span>';
+    h += '<span class="value">' + congPill(d.cong) + '</span>';
+    h += '</td>';
+    instKeys.forEach(inst => {
+      h += '<td class="hidden-cell" onclick="revealCell(this)">';
+      h += '<span class="cover">?</span>';
+      h += '<span class="value">' + vals[inst][d.id] + '</span>';
+      h += '</td>';
+    });
+    h += '</tr>';
+  });
+  tbody.innerHTML = h;
+}
+
+function revealCell(el) {
+  el.classList.add('revealed');
+}
+
+function revealAllCharges() {
+  document.querySelectorAll('#tbl-charges .hidden-cell').forEach(c => c.classList.add('revealed'));
+}
+
+function resetCharges() {
+  document.querySelectorAll('#tbl-charges .hidden-cell').forEach(c => c.classList.remove('revealed'));
+}
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('[onclick="showPage(\'' + page + '\')"]').classList.add('active');
+}
+
+buildChargesTable();
+
+const figDrivers = [
+  { id: 1, line1: 'Regular car', line2: 'Suburbs→CBD', line3: 'Peak', ghgX: 5, congY: 9 },
+  { id: 2, line1: 'Hybrid', line2: 'Suburbs→CBD', line3: 'Peak', ghgX: 2, congY: 9.6 },
+  { id: 3, line1: 'Hybrid', line2: 'Suburbs→CBD', line3: 'Off-peak', ghgX: 2, congY: 1 },
+  { id: 4, line1: 'Hybrid', line2: 'Within CBD', line3: 'Peak', ghgX: 2, congY: 8.4 },
+  { id: 5, line1: 'Guzzler', line2: 'Within CBD', line3: 'Peak', ghgX: 8, congY: 9 },
+  { id: 6, line1: 'Guzzler', line2: 'Rural', line3: '', ghgX: 8, congY: 1 }
+];
+
+const figErrs = {
+  place:  { 1: 'hide', 2: 'hide', 3: 'hide', 4: 'hide', 5: 'hide', 6: 'hide' },
+  none:   { 1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n' },
+  fuel:   { 1: 'med', 2: 'low', 3: 'low', 4: 'low', 5: 'high', 6: 'high' },
+  vkt:    { 1: 'med', 2: 'med', 3: 'med', 4: 'med', 5: 'med', 6: 'med' },
+  cordon: { 1: 'high', 2: 'high', 3: 'high', 4: 'zero', 5: 'zero', 6: 'zero' },
+  entry:  { 1: 'high', 2: 'high', 3: 'zero', 4: 'zero', 5: 'zero', 6: 'zero' }
+};
+
+const figInstLabels = {
+  place: 'Place drivers',
+  none: 'Reveal positions',
+  fuel: 'Fuel tax',
+  vkt: 'VKT charge',
+  cordon: 'Cordon',
+  entry: 'Peak entry'
+};
+
+let activeFigInst = 'place';
+
+function buildFigButtons() {
+  const el = document.getElementById('fig-btns');
+  let h = '';
+  Object.keys(figInstLabels).forEach(key => {
+    const cls = key === 'place' ? 'ctrl-btn fig-btn active-fig' : 'ctrl-btn fig-btn';
+    h += '<button class="' + cls + '" data-inst="' + key + '" onclick="setFigInst(\'' + key + '\')">' + figInstLabels[key] + '</button>';
+  });
+  el.innerHTML = h;
+}
+
+function setFigInst(key) {
+  activeFigInst = key;
+  document.querySelectorAll('.fig-btn').forEach(b => b.classList.remove('active-fig'));
+  document.querySelector('.fig-btn[data-inst="' + key + '"]').classList.add('active-fig');
+  const isInstrument = key !== 'place' && key !== 'none';
+  document.getElementById('fig-legend').style.display = isInstrument ? 'flex' : 'none';
+  document.getElementById('fig-drivers-list').style.display = key === 'place' ? 'block' : 'none';
+  drawFig();
+}
+
+function drawFig() {
+  const canvas = document.getElementById('fig-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = 720;
+  const H = 520;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = '100%';
+  canvas.style.height = 'auto';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 30, right: 30, bottom: 56, left: 70 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const textCol = isDark ? '#e0ddd5' : '#1a1a18';
+  const textCol2 = isDark ? '#9b9b95' : '#6b6b66';
+  const gridCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const axisCol = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+
+  function xPos(v) { return pad.left + (v / 10) * plotW; }
+  function yPos(v) { return pad.top + plotH - (v / 10) * plotH; }
+
+  ctx.strokeStyle = gridCol;
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 10; i += 2) {
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yPos(i));
+    ctx.lineTo(W - pad.right, yPos(i));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xPos(i), pad.top);
+    ctx.lineTo(xPos(i), pad.top + plotH);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = axisCol;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top + plotH);
+  ctx.lineTo(W - pad.right, pad.top + plotH);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + plotH);
+  ctx.stroke();
+
+  ctx.fillStyle = textCol2;
+  ctx.font = '500 12px DM Sans, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('GHG externality', pad.left + plotW / 2, H - 10);
+
+  ctx.save();
+  ctx.translate(16, pad.top + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Congestion externality', 0, 0);
+  ctx.restore();
+
+  const errColors = {
+    n:    isDark ? '#a0a0a0' : '#888880',
+    high: isDark ? '#E87070' : '#9B2C2C',
+    med:  isDark ? '#E8A840' : '#9A5B13',
+    low:  isDark ? '#5CB870' : '#2D6A1E',
+    zero: isDark ? '#a0a0a0' : '#B4B2A9'
+  };
+
+  const errFills = {
+    n:    isDark ? 'rgba(160,160,160,0.12)' : 'rgba(136,136,128,0.08)',
+    high: isDark ? 'rgba(232,112,112,0.2)' : 'rgba(254,241,240,0.9)',
+    med:  isDark ? 'rgba(232,168,64,0.2)' : 'rgba(255,244,230,0.9)',
+    low:  isDark ? 'rgba(92,184,112,0.2)' : 'rgba(240,247,238,0.9)',
+    zero: isDark ? 'rgba(160,160,160,0.12)' : 'rgba(241,239,232,0.9)'
+  };
+
+  const boxW = 96;
+  const boxH = 52;
+  const radius = 8;
+
+  figDrivers.forEach(d => {
+    const lvl = figErrs[activeFigInst][d.id];
+    if (lvl === 'hide') return;
+    const cx = xPos(d.ghgX);
+    const cy = yPos(d.congY);
+    const x = cx - boxW / 2;
+    const y = cy - boxH / 2;
+
+    ctx.beginPath();
+    ctx.roundRect(x, y, boxW, boxH, radius);
+    ctx.fillStyle = errFills[lvl];
+    ctx.fill();
+    ctx.strokeStyle = errColors[lvl];
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = textCol;
+    ctx.font = '600 11px DM Sans, sans-serif';
+    const hasLine3 = d.line3 !== '';
+    if (hasLine3) {
+      ctx.fillText(d.line1, cx, cy - 14);
+      ctx.fillStyle = textCol2;
+      ctx.font = '400 10px DM Sans, sans-serif';
+      ctx.fillText(d.line2, cx, cy + 1);
+      ctx.fillText(d.line3, cx, cy + 13);
+    } else {
+      ctx.fillText(d.line1, cx, cy - 8);
+      ctx.fillStyle = textCol2;
+      ctx.font = '400 10px DM Sans, sans-serif';
+      ctx.fillText(d.line2, cx, cy + 7);
+    }
+  });
+}
+
+function buildDriverList() {
+  const el = document.getElementById('fig-drivers-list');
+  let h = '<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text3);margin-bottom:0.5rem;">Where would you place each driver?</div>';
+  figDrivers.forEach(d => {
+    h += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;margin-bottom:0.4rem;">';
+    h += '<div style="font-weight:600;font-size:0.8rem;">' + d.line1 + '</div>';
+    h += '<div style="font-size:0.72rem;color:var(--text2);line-height:1.4;">' + d.line2;
+    if (d.line3) h += ', ' + d.line3;
+    h += '</div></div>';
+  });
+  el.innerHTML = h;
+}
+
+buildDriverList();
+buildFigButtons();
+drawFig();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawFig);
+</script>
+
+</body>
+</html>
