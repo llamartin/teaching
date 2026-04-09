@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SO₂ Cap & Trade Game</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; background: #FAFAF8; color: #1a1a1a; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+const FIRMS = [
+  { id: "Red", initialE: 2000, macA: 4000, macB: 2, color: "#DC2626" },
+  { id: "Orange", initialE: 2000, macA: 8000, macB: 4, color: "#EA580C" },
+  { id: "Yellow", initialE: 2000, macA: 10000, macB: 5, color: "#CA8A04" },
+  { id: "Green", initialE: 4000, macA: 4000, macB: 1, color: "#16A34A" },
+  { id: "Blue", initialE: 4000, macA: 8000, macB: 2, color: "#2563EB" },
+  { id: "Black", initialE: 4000, macA: 10000, macB: 2.5, color: "#1E293B" },
+];
+const TOTAL_INITIAL = 18000;
+
+function optimalEmissions(firm, price) {
+  const e = (firm.macA - price) / firm.macB;
+  return Math.max(0, Math.min(firm.initialE, e));
+}
+function totalAbatementCost(firm, emissions) {
+  const a = firm.initialE - emissions;
+  if (a <= 0) return 0;
+  return firm.macA * a - (firm.macB / 2) * (firm.initialE * firm.initialE - emissions * emissions);
+}
+function fmt(n) { return n === 0 ? "0" : Math.round(n).toLocaleString("en-US"); }
+function fmtSigned(n) {
+  const s = fmt(Math.abs(n));
+  if (n > 0.5) return "+" + s;
+  if (n < -0.5) return "\u2212" + s;
+  return "0";
+}
+
+const ROUND_PRESETS = [
+  { label: "Round 1: Equal (1480 each)", permits: [1480, 1480, 1480, 1480, 1480, 1480] },
+  { label: "Round 2: Proportional (987 / 1973)", permits: [987, 987, 987, 1973, 1973, 1973] },
+  { label: "Round 3: Tight cap (1000 each)", permits: [1000, 1000, 1000, 1000, 1000, 1000] },
+  { label: "Custom", permits: null },
+];
+
+/* ── Stacked bar chart ── */
+function MarketChart({ firmData, price }) {
+  const buyers = firmData.filter(d => d.permitsSurplus < -0.5).map(d => ({ ...d, qty: Math.abs(d.permitsSurplus) }));
+  const sellers = firmData.filter(d => d.permitsSurplus > 0.5).map(d => ({ ...d, qty: d.permitsSurplus }));
+  const totalBuy = buyers.reduce((a, b) => a + b.qty, 0);
+  const totalSell = sellers.reduce((a, b) => a + b.qty, 0);
+  const maxSide = Math.max(totalBuy, totalSell, 1);
+  const excessDemand = totalBuy - totalSell;
+  const clears = Math.abs(excessDemand) < 0.5;
+
+  const W = 700, H = 190;
+  const barH = 50;
+  const midX = 90;
+  const barMaxW = W - midX - 70;
+  const sellY = H / 2 - barH - 12;
+  const buyY = H / 2 + 12;
+
+  let sellSegments = [], sx = midX;
+  sellers.forEach(seg => { const w = (seg.qty / maxSide) * barMaxW; sellSegments.push({ x: sx, w, firm: seg.firm, qty: seg.qty }); sx += w; });
+  let buySegments = [], bx = midX;
+  buyers.forEach(seg => { const w = (seg.qty / maxSide) * barMaxW; buySegments.push({ x: bx, w, firm: seg.firm, qty: seg.qty }); bx += w; });
+
+  const sellTotalW = (totalSell / maxSide) * barMaxW;
+  const buyTotalW = (totalBuy / maxSide) * barMaxW;
+  const shorterW = Math.min(sellTotalW, buyTotalW);
+  const longerW = Math.max(sellTotalW, buyTotalW);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H, display: "block" }}>
+      <line x1={midX} y1={10} x2={midX} y2={H - 5} stroke="#ddd" strokeWidth={1} />
+      <text x={midX - 8} y={sellY + barH / 2 + 4} fontSize={12} fill="#16A34A" fontFamily="'DM Sans', sans-serif" fontWeight={700} textAnchor="end">SELL</text>
+      <text x={midX - 8} y={buyY + barH / 2 + 4} fontSize={12} fill="#DC2626" fontFamily="'DM Sans', sans-serif" fontWeight={700} textAnchor="end">BUY</text>
+
+      {sellSegments.map((seg, i) => (
+        <g key={`s-${i}`}>
+          <rect x={seg.x} y={sellY} width={Math.max(seg.w, 2)} height={barH} fill={seg.firm.color} opacity={0.85} rx={2} />
+          {seg.w > 35 && <text x={seg.x + seg.w / 2} y={sellY + barH / 2 - 2} fontSize={12} fill="#fff" textAnchor="middle" fontWeight={700} fontFamily="'DM Sans', sans-serif">{seg.firm.id}</text>}
+          {seg.w > 50 && <text x={seg.x + seg.w / 2} y={sellY + barH / 2 + 13} fontSize={10} fill="rgba(255,255,255,0.85)" textAnchor="middle" fontFamily="inherit">{fmt(seg.qty)}</text>}
+        </g>
+      ))}
+      {buySegments.map((seg, i) => (
+        <g key={`b-${i}`}>
+          <rect x={seg.x} y={buyY} width={Math.max(seg.w, 2)} height={barH} fill={seg.firm.color} opacity={0.85} rx={2} />
+          {seg.w > 35 && <text x={seg.x + seg.w / 2} y={buyY + barH / 2 - 2} fontSize={12} fill="#fff" textAnchor="middle" fontWeight={700} fontFamily="'DM Sans', sans-serif">{seg.firm.id}</text>}
+          {seg.w > 50 && <text x={seg.x + seg.w / 2} y={buyY + barH / 2 + 13} fontSize={10} fill="rgba(255,255,255,0.85)" textAnchor="middle" fontFamily="inherit">{fmt(seg.qty)}</text>}
+        </g>
+      ))}
+      {totalSell > 0 && <rect x={midX} y={sellY} width={sellTotalW} height={barH} fill="none" stroke="#16A34A" strokeWidth={2} rx={3} />}
+      {totalBuy > 0 && <rect x={midX} y={buyY} width={buyTotalW} height={barH} fill="none" stroke="#DC2626" strokeWidth={2} rx={3} />}
+      {totalSell > 0 && <text x={midX + sellTotalW + 6} y={sellY + barH / 2 + 4} fontSize={12} fill="#16A34A" fontWeight={700} fontFamily="'DM Sans', sans-serif">{fmt(totalSell)}</text>}
+      {totalBuy > 0 && <text x={midX + buyTotalW + 6} y={buyY + barH / 2 + 4} fontSize={12} fill="#DC2626" fontWeight={700} fontFamily="'DM Sans', sans-serif">{fmt(totalBuy)}</text>}
+
+      {!clears && shorterW > 0 && (() => {
+        const bracketY = excessDemand > 0 ? buyY + barH + 4 : sellY - 4;
+        const dir = excessDemand > 0 ? 1 : -1;
+        return (
+          <g>
+            <line x1={midX + shorterW} y1={sellY + barH + 4} x2={midX + shorterW} y2={buyY - 4} stroke="#aaa" strokeWidth={1} strokeDasharray="3,2" />
+            <line x1={midX + shorterW} y1={bracketY} x2={midX + longerW} y2={bracketY} stroke={excessDemand > 0 ? "#DC2626" : "#2563EB"} strokeWidth={2.5} />
+            <line x1={midX + shorterW} y1={bracketY} x2={midX + shorterW} y2={bracketY + dir * 6} stroke={excessDemand > 0 ? "#DC2626" : "#2563EB"} strokeWidth={2} />
+            <line x1={midX + longerW} y1={bracketY} x2={midX + longerW} y2={bracketY + dir * 6} stroke={excessDemand > 0 ? "#DC2626" : "#2563EB"} strokeWidth={2} />
+            <text x={midX + (shorterW + longerW) / 2} y={bracketY + dir * 17} fontSize={11} fontWeight={700} textAnchor="middle"
+              fill={excessDemand > 0 ? "#DC2626" : "#2563EB"} fontFamily="'DM Sans', sans-serif">
+              {excessDemand > 0 ? `excess demand: ${fmt(excessDemand)}` : `excess supply: ${fmt(Math.abs(excessDemand))}`}
+            </text>
+          </g>
+        );
+      })()}
+
+      {clears && totalSell > 0 && (
+        <g>
+          <line x1={midX + sellTotalW} y1={sellY + barH + 4} x2={midX + buyTotalW} y2={buyY - 4} stroke="#16A34A" strokeWidth={2} />
+          <text x={midX + Math.max(sellTotalW, buyTotalW) + 45} y={H / 2 + 5} fontSize={15} fontWeight={800} fill="#16A34A" fontFamily="'DM Sans', sans-serif" textAnchor="middle">✓</text>
+        </g>
+      )}
+
+      <text x={14} y={H / 2 + 5} fontSize={16} fontWeight={700} fill="#1a1a1a" fontFamily="'DM Sans', sans-serif">${fmt(price)}</text>
+    </svg>
+  );
+}
+
+
+function App() {
+  const [rounds, setRounds] = useState([]);
+  const [currentRound, setCurrentRound] = useState(null);
+  const [setupMode, setSetupMode] = useState(true);
+  const [permits, setPermits] = useState([1480, 1480, 1480, 1480, 1480, 1480]);
+  const [selectedPreset, setSelectedPreset] = useState(0);
+  const [price, setPrice] = useState("");
+  const [desiredEmissions, setDesiredEmissions] = useState(FIRMS.map(() => ""));
+  const [showTheory, setShowTheory] = useState(false);
+
+  const fillOptimal = () => {
+    if (!priceValid) return;
+    const optEmissions = FIRMS.map(f => String(Math.round(optimalEmissions(f, currentPrice))));
+    setDesiredEmissions(optEmissions);
+  };
+
+  const totalPermits = permits.reduce((a, b) => a + b, 0);
+
+  const startRound = useCallback(() => {
+    setCurrentRound({ permits: [...permits], bidRounds: [] });
+    setSetupMode(false);
+    setPrice("");
+    setDesiredEmissions(FIRMS.map(() => ""));
+  }, [permits]);
+
+  const handlePreset = (idx) => {
+    setSelectedPreset(idx);
+    if (ROUND_PRESETS[idx].permits) setPermits([...ROUND_PRESETS[idx].permits]);
+  };
+
+  const parsedEmissions = desiredEmissions.map((a, i) => {
+    const v = parseFloat(a);
+    if (isNaN(v)) return null;
+    if (v < 0 || v > FIRMS[i].initialE) return "error";
+    return v;
+  });
+  const allEntered = parsedEmissions.every(a => a !== null && a !== "error");
+  const hasErrors = parsedEmissions.some(a => a === "error");
+  const currentPrice = parseFloat(price);
+  const priceValid = !isNaN(currentPrice) && currentPrice > 0;
+
+  const derived = FIRMS.map((f, i) => {
+    const emissions = parsedEmissions[i];
+    if (emissions === null || emissions === "error") return null;
+    const abated = f.initialE - emissions;
+    const permitsAllocated = currentRound ? currentRound.permits[i] : 0;
+    const permitsSurplus = permitsAllocated - emissions;
+    const abatementCost = totalAbatementCost(f, emissions);
+    const permitExpenditure = permitsSurplus < -0.5 ? Math.abs(permitsSurplus) * currentPrice : permitsSurplus > 0.5 ? -permitsSurplus * currentPrice : 0;
+    return { emissions, abated, permitsNeeded: emissions, permitsSurplus, abatementCost, permitExpenditure };
+  });
+  const allDerived = derived.every(d => d !== null);
+  const totalBuy = allDerived ? derived.filter(d => d.permitsSurplus < -0.5).reduce((a, d) => a + Math.abs(d.permitsSurplus), 0) : 0;
+  const totalSell = allDerived ? derived.filter(d => d.permitsSurplus > 0.5).reduce((a, d) => a + d.permitsSurplus, 0) : 0;
+  const excessDemand = totalBuy - totalSell;
+  const clears = allDerived && Math.abs(excessDemand) < 0.5;
+  const chartData = allDerived ? FIRMS.map((f, i) => ({ firm: f, permitsSurplus: derived[i].permitsSurplus })) : null;
+  const theoreticalAbatements = priceValid ? FIRMS.map(f => Math.round(f.initialE - optimalEmissions(f, currentPrice))) : null;
+
+  const submitBidRound = () => {
+    if (!allEntered || !priceValid || !allDerived) return;
+    setCurrentRound(prev => ({
+      ...prev,
+      bidRounds: [...prev.bidRounds, {
+        price: currentPrice, desiredEmissions: parsedEmissions.map(a => a),
+        derived: derived.map(d => ({ ...d })), excessDemand, totalBuy, totalSell,
+      }],
+    }));
+    setPrice("");
+    setDesiredEmissions(FIRMS.map(() => ""));
+  };
+
+  const finalizeRound = () => {
+    const cr = currentRound.bidRounds.find(br => Math.abs(br.excessDemand) < 0.5);
+    if (!cr) return;
+    const p = cr.price;
+    const results = FIRMS.map((f, i) => {
+      const d = cr.derived[i];
+      const ac = totalAbatementCost(f, d.emissions);
+      return {
+        firm: f.id, initialE: f.initialE, permits: currentRound.permits[i],
+        emissions: Math.round(d.emissions), abated: Math.round(d.abated),
+        permitsSold: Math.round(d.permitsSurplus), abatementCost: Math.round(ac),
+        netCost: Math.round(ac - d.permitsSurplus * p),
+      };
+    });
+    setRounds(prev => [...prev, {
+      roundNum: prev.length + 1, permits: [...currentRound.permits],
+      totalPermits: currentRound.permits.reduce((a, b) => a + b, 0),
+      clearingPrice: p, bidHistory: [...currentRound.bidRounds], results,
+      totalAbatementCost: results.reduce((a, r) => a + r.abatementCost, 0),
+    }]);
+    setCurrentRound(null); setSetupMode(true);
+    if (selectedPreset < ROUND_PRESETS.length - 2) {
+      const next = selectedPreset + 1; setSelectedPreset(next);
+      if (ROUND_PRESETS[next].permits) setPermits([...ROUND_PRESETS[next].permits]);
+    }
+  };
+
+  const hasClearingRound = currentRound?.bidRounds.some(br => Math.abs(br.excessDemand) < 0.5);
+  const dm = { fontFamily: "'DM Sans', sans-serif" };
+  const cardSm = { background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, padding: 16, marginBottom: 12 };
+  const btnStyle = (active) => ({ padding: "6px 12px", fontSize: 11, fontFamily: "inherit", border: active ? "2px solid #1a1a1a" : "1px solid #ccc", borderRadius: 4, background: active ? "#1a1a1a" : "#fff", color: active ? "#fff" : "#333", cursor: "pointer", fontWeight: active ? 600 : 400 });
+
+  // Table cell styles for the big list
+  const thSt = { textAlign: "right", padding: "6px 10px", fontWeight: 600, fontSize: 13, color: "#888", whiteSpace: "nowrap" };
+  const tdSt = { textAlign: "right", padding: "6px 10px", fontSize: 17, fontWeight: 600 };
+  const inputTdSt = { textAlign: "center", padding: "4px 6px" };
+
+  return (
+    <div style={{ padding: "20px 24px", minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: "2px solid #1a1a1a", paddingBottom: 8, marginBottom: 16 }}>
+        <div>
+          <h1 style={{ ...dm, fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>SO₂ Cap & Trade</h1>
+
+        </div>
+        {rounds.length > 0 && <span style={{ fontSize: 11, color: "#888" }}>{rounds.length} round{rounds.length > 1 ? "s" : ""} completed</span>}
+      </div>
+
+      <div style={{ display: "flex", gap: 20 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {setupMode ? (
+            /* ─── SETUP ─── */
+            <div style={{ ...cardSm, padding: 20 }}>
+              <h2 style={{ ...dm, fontSize: 16, fontWeight: 600, margin: "0 0 16px 0" }}>Round {rounds.length + 1} Setup</h2>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                {ROUND_PRESETS.map((p, i) => <button key={i} onClick={() => handlePreset(i)} style={btnStyle(selectedPreset === i)}>{p.label}</button>)}
+              </div>
+
+              {/* ─── Emissions visualization ─── */}
+              {(() => {
+                const maxE = Math.max(...FIRMS.map(f => f.initialE));
+                const barW = 70, barGap = 24, chartH = 260, padLeft = 50, padTop = 20, padBottom = 50;
+                const totalW = padLeft + FIRMS.length * (barW + barGap) + 20;
+                const totalH = chartH + padTop + padBottom;
+                const scale = (v) => padTop + chartH - (v / maxE) * chartH;
+
+                // Determine cap style: uniform if all same, proportional otherwise
+                const allSame = permits.every(p => p === permits[0]);
+
+                return (
+                  <svg viewBox={`0 0 ${totalW} ${totalH}`} style={{ width: "100%", maxWidth: 620, height: totalH, display: "block", margin: "0 auto 16px" }}>
+                    {/* Y-axis gridlines */}
+                    {[0, 1000, 2000, 3000, 4000].map(v => (
+                      <g key={v}>
+                        <line x1={padLeft - 5} y1={scale(v)} x2={totalW - 10} y2={scale(v)} stroke="#eee" strokeWidth={1} />
+                        <text x={padLeft - 10} y={scale(v) + 4} fontSize={10} fill="#aaa" textAnchor="end" fontFamily="inherit">{fmt(v)}</text>
+                      </g>
+                    ))}
+                    {/* Baseline */}
+                    <line x1={padLeft} y1={scale(0)} x2={totalW - 10} y2={scale(0)} stroke="#ccc" strokeWidth={1.5} />
+
+                    {/* Bars */}
+                    {FIRMS.map((f, i) => {
+                      const x = padLeft + i * (barW + barGap) + barGap / 2;
+                      const capVal = permits[i];
+                      const barTop = scale(f.initialE);
+                      const barBottom = scale(0);
+                      const capY = scale(capVal);
+
+                      return (
+                        <g key={f.id}>
+                          {/* Full emission bar */}
+                          <rect x={x} y={barTop} width={barW} height={barBottom - barTop} fill={f.color} opacity={0.25} rx={3} />
+                          {/* Permitted portion (below cap) */}
+                          <rect x={x} y={capY} width={barW} height={barBottom - capY} fill={f.color} opacity={0.7} rx={3} />
+                          {/* Cap cut line */}
+                          <line x1={x - 4} y1={capY} x2={x + barW + 4} y2={capY} stroke={f.color} strokeWidth={2.5} />
+                          {/* Abated region pattern - diagonal lines */}
+                          <clipPath id={`clip-${i}`}>
+                            <rect x={x} y={barTop} width={barW} height={capY - barTop} />
+                          </clipPath>
+                          <g clipPath={`url(#clip-${i})`}>
+                            {Array.from({ length: 20 }, (_, k) => (
+                              <line key={k} x1={x + k * 8 - 40} y1={barTop - 5} x2={x + k * 8 - 40 + 80} y2={barTop + 75}
+                                stroke={f.color} strokeWidth={1} opacity={0.15} />
+                            ))}
+                          </g>
+
+                          {/* Emission value at top */}
+                          <text x={x + barW / 2} y={barTop - 6} fontSize={13} fill={f.color} fontWeight={700} textAnchor="middle" fontFamily="'DM Sans', sans-serif">
+                            {fmt(f.initialE)}
+                          </text>
+                          {/* Cap value */}
+                          {capVal < f.initialE && (
+                            <text x={x + barW + 8} y={capY + 4} fontSize={10} fill={f.color} fontWeight={600} textAnchor="start" fontFamily="inherit">
+                              {fmt(capVal)}
+                            </text>
+                          )}
+                          {/* Firm name */}
+                          <text x={x + barW / 2} y={barBottom + 16} fontSize={13} fill={f.color} fontWeight={700} textAnchor="middle" fontFamily="'DM Sans', sans-serif">
+                            {f.id}
+                          </text>
+                          {/* MAC equation */}
+                          <text x={x + barW / 2} y={barBottom + 30} fontSize={9} fill="#aaa" textAnchor="middle" fontFamily="'DM Sans', sans-serif">
+                            {f.macA.toLocaleString("en-US")} − {f.macB === 1 ? "" : f.macB}E
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Uniform cap line across all bars if all permits are the same */}
+                    {allSame && permits[0] < maxE && (
+                      <g>
+                        <line x1={padLeft} y1={scale(permits[0])} x2={totalW - 10} y2={scale(permits[0])}
+                          stroke="#DC2626" strokeWidth={2} strokeDasharray="8,4" />
+                        <text x={totalW - 8} y={scale(permits[0]) - 6} fontSize={11} fill="#DC2626" fontWeight={700} textAnchor="end" fontFamily="'DM Sans', sans-serif">
+                          Cap: {fmt(permits[0])} each
+                        </text>
+                      </g>
+                    )}
+
+                    {/* Y-axis label */}
+                    <text x={12} y={padTop + chartH / 2} fontSize={11} fill="#aaa" fontFamily="'DM Sans', sans-serif" textAnchor="middle"
+                      transform={`rotate(-90, 12, ${padTop + chartH / 2})`}>
+                      Tons SO₂
+                    </text>
+                  </svg>
+                );
+              })()}
+
+              {/* Permit inputs */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 16 }}>
+                {FIRMS.map((f, i) => (
+                  <div key={f.id} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: f.color, marginBottom: 4 }}>{f.id} permits</div>
+                    <input type="number" value={permits[i]} onChange={(e) => { const np = [...permits]; np[i] = parseInt(e.target.value) || 0; setPermits(np); setSelectedPreset(3); }}
+                      style={{ width: "100%", padding: "6px 4px", fontSize: 13, fontFamily: "inherit", border: `1px solid ${f.color}44`, borderRadius: 4, textAlign: "center" }} />
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "#555", ...dm }}>Total cap: <strong>{fmt(totalPermits)}</strong> permits · <strong>{((1 - totalPermits / TOTAL_INITIAL) * 100).toFixed(0)}%</strong> reduction from {fmt(TOTAL_INITIAL)}</span>
+                <button onClick={startRound} style={{ padding: "8px 24px", fontSize: 13, ...dm, fontWeight: 600, border: "none", borderRadius: 4, background: "#1a1a1a", color: "#fff", cursor: "pointer" }}>
+                  Start Round {rounds.length + 1} →
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ─── BIDDING ─── */
+            <div>
+              {/* Price input bar */}
+              <div style={{ ...cardSm, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                <span style={{ ...dm, fontSize: 18, fontWeight: 700 }}>
+                  At{" "}
+                  <span style={{ display: "inline-flex", alignItems: "center" }}>
+                    $<input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="___"
+                      style={{ padding: "6px 10px", fontSize: 22, fontFamily: "inherit", fontWeight: 700, border: "2px solid #1a1a1a", borderRadius: 4, width: 130, textAlign: "center", marginLeft: 2, marginRight: 2 }} />
+                  </span>
+                  {" "}per permit
+                </span>
+                <span style={{ fontSize: 16, color: "#555", fontWeight: 600, ...dm, marginLeft: "auto" }}>
+                  Round {rounds.length + 1} · Cap: {fmt(currentRound.permits.reduce((a, b) => a + b, 0))} permits
+                </span>
+                <button onClick={fillOptimal} disabled={!priceValid}
+                  style={{ padding: "4px 12px", fontSize: 10, fontFamily: "inherit", border: "1px solid #ccc", borderRadius: 4, background: !priceValid ? "#f5f5f5" : "#fff", cursor: priceValid ? "pointer" : "default", color: priceValid ? "#555" : "#ccc" }}>
+                  Fill optimal answers
+                </button>
+              </div>
+
+              {/* ─── BIG TABLE ─── */}
+              <div style={{ ...cardSm, padding: "12px 0", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #1a1a1a" }}>
+                      <th style={{ ...thSt, textAlign: "left", paddingLeft: 16 }}>Firm</th>
+                      <th style={{ ...thSt, background: "#FFFBEB" }}>Desired<br/>emissions</th>
+                      <th style={thSt}>Initial<br/>emissions</th>
+                      <th style={thSt}>Abatement</th>
+                      <th style={thSt}>Total cost of<br/>abatement</th>
+                      <th style={thSt}>Permits<br/>needed</th>
+                      <th style={thSt}>Permits<br/>allocated</th>
+                      <th style={thSt}>Buy / Sell</th>
+                      <th style={thSt}>Expenditure<br/>on permits</th>
+                      <th style={{ ...thSt, borderLeft: "2px solid #1a1a1a" }}>Cost of<br/>regulation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {FIRMS.map((f, i) => {
+                      const pe = parsedEmissions[i];
+                      const isError = pe === "error";
+                      const d = derived[i];
+                      const isBuyer = d && d.permitsSurplus < -0.5;
+                      const isSeller = d && d.permitsSurplus > 0.5;
+                      const costOfReg = d && priceValid ? d.abatementCost + d.permitExpenditure : null;
+
+                      return (
+                        <tr key={f.id} style={{ borderBottom: "1px solid #eee" }}>
+                          {/* Firm name */}
+                          <td style={{ padding: "8px 10px 8px 16px", whiteSpace: "nowrap" }}>
+                            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: f.color, marginRight: 8, verticalAlign: "middle" }}></span>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: f.color, verticalAlign: "middle" }}>{f.id}</span>
+                            <div style={{ fontSize: 14, color: "#777", marginTop: 3, paddingLeft: 18, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, letterSpacing: "0.3px" }}>
+                              MAC = {f.macA.toLocaleString("en-US")} &minus; {f.macB === 1 ? "" : f.macB}<i>E</i>
+                            </div>
+                          </td>
+                          {/* Desired emissions input */}
+                          <td style={{ ...inputTdSt, background: "#FFFBEB" }}>
+                            <input type="number" value={desiredEmissions[i]}
+                              onChange={(e) => { const ne = [...desiredEmissions]; ne[i] = e.target.value; setDesiredEmissions(ne); }}
+                              placeholder="—"
+                              style={{
+                                width: 90, padding: "6px 8px", fontSize: 18, fontFamily: "inherit", fontWeight: 700,
+                                border: `2px solid ${isError ? "#DC2626" : d ? f.color : "#ddd"}`,
+                                borderRadius: 4, textAlign: "center", background: "#fff",
+                              }} />
+                            {isError && <div style={{ fontSize: 9, color: "#DC2626", fontWeight: 600, marginTop: 2 }}>0–{fmt(f.initialE)}</div>}
+                          </td>
+                          {/* Initial emissions */}
+                          <td style={{ ...tdSt, color: "#888" }}>{fmt(f.initialE)}</td>
+                          {/* Abatement */}
+                          <td style={{ ...tdSt, color: d ? "#555" : "#ddd" }}>{d ? fmt(d.abated) : "—"}</td>
+                          {/* Total cost of abatement */}
+                          <td style={{ ...tdSt, color: d ? "#555" : "#ddd", fontSize: 14 }}>{d ? "$" + fmt(d.abatementCost) : "—"}</td>
+                          {/* Permits needed */}
+                          <td style={{ ...tdSt, color: d ? "#555" : "#ddd" }}>{d ? fmt(d.permitsNeeded) : "—"}</td>
+                          {/* Permits allocated */}
+                          <td style={{ ...tdSt, color: "#888" }}>{fmt(currentRound.permits[i])}</td>
+                          {/* Buy / Sell */}
+                          <td style={{
+                            ...tdSt, fontSize: 18, fontWeight: 800,
+                            color: isBuyer ? "#DC2626" : isSeller ? "#16A34A" : "#ccc",
+                          }}>
+                            {d ? (
+                              isBuyer ? `Buy ${fmt(Math.abs(d.permitsSurplus))}` :
+                              isSeller ? `Sell ${fmt(d.permitsSurplus)}` : "—"
+                            ) : "—"}
+                          </td>
+                          {/* Expenditure on permits */}
+                          <td style={{
+                            ...tdSt, fontSize: 14,
+                            color: d && priceValid ? (d.permitsSurplus < -0.5 ? "#DC2626" : d.permitsSurplus > 0.5 ? "#16A34A" : "#ccc") : "#ddd",
+                          }}>
+                            {d && priceValid ? (
+                              d.permitsSurplus < -0.5 ? `$${fmt(Math.abs(d.permitExpenditure))}` :
+                              d.permitsSurplus > 0.5 ? `−$${fmt(Math.abs(d.permitExpenditure))}` : "—"
+                            ) : "—"}
+                          </td>
+                          {/* Cost of regulation */}
+                          <td style={{
+                            ...tdSt, fontSize: 16, fontWeight: 800, borderLeft: "2px solid #1a1a1a",
+                            color: costOfReg !== null ? (costOfReg < -0.5 ? "#16A34A" : "#1a1a1a") : "#ddd",
+                          }}>
+                            {costOfReg !== null ? (
+                              costOfReg < -0.5 ? `−$${fmt(Math.abs(costOfReg))}` : `$${fmt(costOfReg)}`
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Chart */}
+              {allDerived && priceValid && chartData && (
+                <div style={{ ...cardSm, padding: "10px 8px 4px", border: `2px solid ${clears ? "#16A34A" : "#e8e8e8"}`, background: clears ? "#F7FDF9" : "#fff" }}>
+                  <MarketChart firmData={chartData} price={currentPrice} />
+                </div>
+              )}
+
+              {/* Market clears banner */}
+              {clears && (
+                <div style={{
+                  padding: "10px 16px", borderRadius: 6, marginBottom: 12,
+                  background: "#F0FDF4", border: "2px solid #16A34A",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, ...dm, color: "#16A34A" }}>
+                    ✓ Market clears at ${fmt(currentPrice)} per permit
+                  </div>
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 12 }}>
+                <button onClick={submitBidRound} disabled={!allEntered || !priceValid || hasErrors}
+                  style={{ padding: "8px 20px", fontSize: 12, ...dm, fontWeight: 600, border: "1px solid #ccc", borderRadius: 4,
+                    background: !allEntered || !priceValid || hasErrors ? "#f5f5f5" : "#fff",
+                    color: !allEntered || !priceValid || hasErrors ? "#ccc" : "#333",
+                    cursor: !allEntered || !priceValid || hasErrors ? "default" : "pointer" }}>
+                  {clears ? "Record" : "Record & Try New Price"}
+                </button>
+                {hasClearingRound && (
+                  <button onClick={finalizeRound}
+                    style={{ padding: "8px 24px", fontSize: 12, ...dm, fontWeight: 700, border: "none", borderRadius: 4, background: "#16A34A", color: "#fff", cursor: "pointer" }}>
+                    Finalize Round ✓
+                  </button>
+                )}
+              </div>
+
+              {/* Bid history */}
+              {currentRound.bidRounds.length > 0 && (
+                <div style={cardSm}>
+                  <h3 style={{ ...dm, fontSize: 13, fontWeight: 600, margin: "0 0 8px 0", color: "#555" }}>Previous attempts this round</h3>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #1a1a1a" }}>
+                        <th style={{ textAlign: "left", padding: "4px 8px", fontWeight: 600 }}>Price</th>
+                        {FIRMS.map(f => <th key={f.id} style={{ textAlign: "center", padding: "4px 4px", fontWeight: 600, color: f.color, fontSize: 10 }}>
+                          <div>{f.id}</div><div style={{ fontWeight: 400, color: "#aaa", fontSize: 8 }}>emit / trade</div>
+                        </th>)}
+                        <th style={{ textAlign: "right", padding: "4px 8px", fontWeight: 600 }}>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentRound.bidRounds.map((br, j) => {
+                        const cl = Math.abs(br.excessDemand) < 0.5;
+                        return (
+                          <tr key={j} style={{ borderBottom: "1px solid #eee", background: cl ? "#F0FDF4" : "transparent" }}>
+                            <td style={{ padding: "5px 8px", fontWeight: 600 }}>${fmt(br.price)}</td>
+                            {br.derived.map((d, k) => (
+                              <td key={k} style={{ textAlign: "center", padding: "5px 4px", fontSize: 10 }}>
+                                <span style={{ color: "#666" }}>{fmt(d.emissions)}</span>
+                                <span style={{ color: "#ccc" }}> / </span>
+                                <span style={{ color: d.permitsSurplus > 0.5 ? "#16A34A" : d.permitsSurplus < -0.5 ? "#DC2626" : "#999", fontWeight: 600 }}>
+                                  {d.permitsSurplus > 0.5 ? `S${fmt(d.permitsSurplus)}` : d.permitsSurplus < -0.5 ? `B${fmt(Math.abs(d.permitsSurplus))}` : "—"}
+                                </span>
+                              </td>
+                            ))}
+                            <td style={{ textAlign: "right", padding: "5px 8px", fontWeight: 700,
+                              color: cl ? "#16A34A" : br.excessDemand > 0 ? "#DC2626" : "#2563EB" }}>
+                              {cl ? "✓ clears" : fmtSigned(br.excessDemand)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ─── SIDE PANEL ─── */}
+        {rounds.length > 0 && (
+          <div style={{ width: 320, flexShrink: 0, fontSize: 10 }}>
+            <div style={{ position: "sticky", top: 12 }}>
+              <h3 style={{ ...dm, fontSize: 12, fontWeight: 700, margin: "0 0 8px 0", color: "#888", textTransform: "uppercase", letterSpacing: "1px" }}>Completed Rounds</h3>
+              {rounds.map(r => (
+                <div key={r.roundNum} style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, padding: 10, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ ...dm, fontWeight: 700, fontSize: 11 }}>Round {r.roundNum}</span>
+                    <span style={{ color: "#666" }}>P = ${fmt(r.clearingPrice)} · Cap = {fmt(r.totalPermits)}</span>
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #ddd" }}>
+                        <th style={{ textAlign: "left", padding: "2px 3px", fontWeight: 600 }}>Firm</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>E</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Abated</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Sold</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Net $</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.results.map(res => {
+                        const firm = FIRMS.find(f => f.id === res.firm);
+                        return (
+                          <tr key={res.firm} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                            <td style={{ padding: "2px 3px", fontWeight: 600, color: firm.color }}>{res.firm}</td>
+                            <td style={{ textAlign: "right", padding: "2px 3px" }}>{fmt(res.emissions)}</td>
+                            <td style={{ textAlign: "right", padding: "2px 3px" }}>{fmt(res.abated)}</td>
+                            <td style={{ textAlign: "right", padding: "2px 3px", color: res.permitsSold > 0 ? "#16A34A" : res.permitsSold < 0 ? "#DC2626" : "#999" }}>{fmtSigned(res.permitsSold)}</td>
+                            <td style={{ textAlign: "right", padding: "2px 3px", fontWeight: 500 }}>{fmt(res.netCost)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ borderTop: "1.5px solid #1a1a1a" }}>
+                        <td colSpan={4} style={{ padding: "3px 3px", fontWeight: 700, ...dm }}>Total abatement cost</td>
+                        <td style={{ textAlign: "right", padding: "3px 3px", fontWeight: 700 }}>${fmt(r.totalAbatementCost)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  {r.bidHistory.length > 1 && (
+                    <details style={{ marginTop: 6 }}>
+                      <summary style={{ cursor: "pointer", fontSize: 9, color: "#aaa", fontWeight: 500 }}>{r.bidHistory.length} price attempts</summary>
+                      <div style={{ marginTop: 4 }}>
+                        {r.bidHistory.map((bh, j) => (
+                          <div key={j} style={{ display: "flex", justifyContent: "space-between", padding: "1px 0", color: Math.abs(bh.excessDemand) < 0.5 ? "#16A34A" : "#999" }}>
+                            <span>${fmt(bh.price)}</span>
+                            <span>{Math.abs(bh.excessDemand) < 0.5 ? "✓ clears" : `ED: ${fmtSigned(bh.excessDemand)}`}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              ))}
+              {rounds.length >= 2 && (
+                <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, padding: 10, marginTop: 4 }}>
+                  <div style={{ ...dm, fontWeight: 700, fontSize: 11, marginBottom: 6 }}>Comparison</div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #ddd" }}>
+                        <th style={{ textAlign: "left", padding: "2px 3px", fontWeight: 600 }}>Round</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Cap</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Price</th>
+                        <th style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>Total AC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: "1px solid #f0f0f0", color: "#999" }}>
+                        <td style={{ padding: "2px 3px" }}>Uniform</td>
+                        <td style={{ textAlign: "right", padding: "2px 3px" }}>8,880</td>
+                        <td style={{ textAlign: "right", padding: "2px 3px" }}>—</td>
+                        <td style={{ textAlign: "right", padding: "2px 3px" }}>$18,950,800</td>
+                      </tr>
+                      {rounds.map(r => (
+                        <tr key={r.roundNum} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                          <td style={{ padding: "2px 3px", fontWeight: 600 }}>R{r.roundNum}</td>
+                          <td style={{ textAlign: "right", padding: "2px 3px" }}>{fmt(r.totalPermits)}</td>
+                          <td style={{ textAlign: "right", padding: "2px 3px" }}>${fmt(r.clearingPrice)}</td>
+                          <td style={{ textAlign: "right", padding: "2px 3px", fontWeight: 600 }}>${fmt(r.totalAbatementCost)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SO₂ Cap & Trade — Round 0 Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; background: #FAFAF8; color: #1a1a1a; padding: 24px; }
+h1 { font-family: 'DM Sans', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+h2 { font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; }
+.dm { font-family: 'DM Sans', sans-serif; }
+.card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: right; padding: 8px 10px; font-weight: 600; font-size: 13px; color: #888; white-space: nowrap; }
+th.left { text-align: left; padding-left: 16px; }
+td { text-align: right; padding: 6px 10px; font-size: 16px; font-weight: 600; }
+td.firm-cell { text-align: left; padding: 8px 10px 8px 16px; white-space: nowrap; }
+
+td input[type=text] {
+  width: 110px; padding: 6px 8px; font-size: 16px; font-family: inherit; font-weight: 700;
+  border: 2px solid #ddd; border-radius: 4px; text-align: center; background: #fff;
+  transition: border-color 0.2s, background 0.2s;
+}
+td input[type=text]:focus { outline: none; border-color: #1a1a1a; }
+td input.correct { border-color: #16A34A; background: #F0FDF4; }
+td input.wrong { border-color: #DC2626; background: #FEF2F2; }
+
+.hint { font-size: 10px; color: #DC2626; margin-top: 3px; min-height: 14px; font-weight: 500; text-align: center; }
+
+.check-btn {
+  padding: 10px 28px; font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 700;
+  border: none; border-radius: 6px; background: #1a1a1a; color: #fff; cursor: pointer;
+}
+.check-btn:hover { background: #333; }
+.reset-btn {
+  padding: 10px 28px; font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+  border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #555; cursor: pointer;
+}
+
+.total-row td { border-top: 2.5px solid #1a1a1a; font-weight: 800; font-size: 17px; }
+.scenario { font-size: 15px; line-height: 1.7; color: #444; max-width: 800px; }
+.scenario strong { color: #1a1a1a; }
+
+/* Revealed full table */
+#full-results { display: none; }
+#full-results table td { font-size: 15px; padding: 7px 10px; }
+#full-results .total-row td { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #1a1a1a; padding-bottom: 8px; margin-bottom: 20px;">
+  <h1>SO₂ Cap & Trade — Round 0</h1>
+  <span style="font-size: 12px; color: #888;">Command & control · no trading</span>
+</div>
+
+<div class="card">
+  <h2 style="margin-bottom: 12px;">Scenario</h2>
+  <div class="scenario">
+    You are one of <strong>6 electric utilities</strong> that own coal-fired power plants emitting SO₂.
+    The regulator wants to limit total emissions to <strong>8,880 tons</strong> (down from 18,000 — a 50.7% cut)
+    and imposes a <strong>uniform standard</strong>: each firm may emit at most
+    <strong>8,880 ÷ 6 = 1,480 tons</strong> of SO₂. There is <strong>no trading</strong>.
+  </div>
+</div>
+
+<div class="card">
+  <p class="dm" style="font-size: 14px; color: #555;">
+    <strong>Reminder:</strong> Total cost of abatement = area under the MAC curve from the emissions allowed up to initial emissions.
+  </p>
+</div>
+
+<!-- Student input section -->
+<div class="card" style="padding: 16px 0;" id="worksheet-section">
+  <div style="padding: 0 20px 12px; display: flex; justify-content: space-between; align-items: center;">
+    <h2>Compute for Orange and Blue, then find the industry total</h2>
+    <div style="display: flex; gap: 8px;">
+      <button class="reset-btn" onclick="resetAll()">Reset</button>
+      <button class="check-btn" onclick="checkAnswers()">Check my answers</button>
+    </div>
+  </div>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr style="border-bottom: 2px solid #1a1a1a;">
+          <th class="left">Firm</th>
+          <th>Initial<br>emissions</th>
+          <th>Emissions<br>allowed</th>
+          <th>Abatement</th>
+          <th>MAC of last<br>unit abated</th>
+          <th>Total cost of<br>abatement</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td class="firm-cell dm">Total industry cost</td>
+          <td colspan="4"></td>
+          <td id="total-cost-display" style="color: #ccc;">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Success message -->
+<div class="card" id="success-msg" style="display: none; background: #F0FDF4; border-color: #16A34A;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 28px;">✓</span>
+    <div>
+      <h2 style="color: #16A34A; margin-bottom: 4px;">All correct!</h2>
+      <p class="dm" style="font-size: 14px; color: #555;">
+        Under command & control, total industry abatement cost is <strong id="success-total"></strong>.
+        Now think about: is this the cheapest way to achieve 8,880 tons? Which firms are abating
+        "too much" relative to their costs, and which "too little"?
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Full results table (hidden until success) -->
+<div class="card" id="full-results">
+  <h2 style="margin-bottom: 12px;">Full results — all firms</h2>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr style="border-bottom: 2px solid #1a1a1a;">
+          <th class="left">Firm</th>
+          <th>Initial<br>emissions</th>
+          <th>Emissions<br>allowed</th>
+          <th>Abatement</th>
+          <th>MAC of last<br>unit abated</th>
+          <th>Total cost of<br>abatement</th>
+        </tr>
+      </thead>
+      <tbody id="full-tbody"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td class="firm-cell dm">Total</td>
+          <td id="full-total-initial" style="color:#888;"></td>
+          <td id="full-total-allowed" style="color:#888;"></td>
+          <td id="full-total-abated"></td>
+          <td style="color:#ccc;">—</td>
+          <td id="full-total-tac"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<script>
+const FIRMS = [
+  { id: "Red",    initialE: 2000, macA: 4000,  macB: 2,   color: "#DC2626" },
+  { id: "Orange", initialE: 2000, macA: 8000,  macB: 4,   color: "#EA580C" },
+  { id: "Yellow", initialE: 2000, macA: 10000, macB: 5,   color: "#CA8A04" },
+  { id: "Green",  initialE: 4000, macA: 4000,  macB: 1,   color: "#16A34A" },
+  { id: "Blue",   initialE: 4000, macA: 8000,  macB: 2,   color: "#2563EB" },
+  { id: "Black",  initialE: 4000, macA: 10000, macB: 2.5, color: "#1E293B" },
+];
+
+const INPUT_FIRMS = ["Orange", "Blue"]; // firms students must calculate
+const CAP_PER_FIRM = 1480;
+
+function macVal(firm, E) { return firm.macA - firm.macB * E; }
+
+function tacVal(firm, emAllowed) {
+  const E0 = firm.initialE, E1 = emAllowed;
+  if (E0 - E1 <= 0) return 0;
+  return firm.macA * (E0 - E1) - (firm.macB / 2) * (E0 * E0 - E1 * E1);
+}
+
+function fmt(n) { return n === 0 ? "0" : Math.round(n).toLocaleString("en-US"); }
+function fmtMac(f) {
+  return f.macA.toLocaleString("en-US") + " &minus; " + (f.macB === 1 ? "" : f.macB) + "<i>E</i>";
+}
+
+// Precompute answers
+const answers = FIRMS.map(f => ({
+  abated: f.initialE - CAP_PER_FIRM,
+  mac: macVal(f, CAP_PER_FIRM),
+  tac: Math.round(tacVal(f, CAP_PER_FIRM)),
+}));
+const totalTAC = answers.reduce((a, r) => a + r.tac, 0);
+
+// ─── Build student input table ───
+const tbody = document.getElementById("tbody");
+FIRMS.forEach((f, i) => {
+  const isInput = INPUT_FIRMS.includes(f.id);
+  const a = answers[i];
+  const tr = document.createElement("tr");
+  tr.style.borderBottom = "1px solid #eee";
+  if (isInput) tr.style.background = "#FFFBEB";
+
+  const firmCell = `
+    <td class="firm-cell">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${f.color};margin-right:8px;vertical-align:middle;"></span>
+      <span style="font-size:16px;font-weight:700;color:${f.color};vertical-align:middle;">${f.id}</span>
+      <div style="font-size:14px;color:#777;margin-top:3px;padding-left:18px;font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:0.3px;">
+        MAC = ${fmtMac(f)}
+      </div>
+    </td>`;
+
+  const givenCells = `
+    <td style="color:#888;">${fmt(f.initialE)}</td>
+    <td style="color:#888;">${fmt(CAP_PER_FIRM)}</td>`;
+
+  if (isInput) {
+    tr.innerHTML = firmCell + givenCells + `
+      <td><div style="position:relative;">
+        <input type="text" inputmode="numeric" id="abated-${i}" placeholder="—">
+        <div class="hint" id="hint-abated-${i}"></div>
+      </div></td>
+      <td><div style="position:relative;">
+        <input type="text" inputmode="numeric" id="mac-${i}" placeholder="—">
+        <div class="hint" id="hint-mac-${i}"></div>
+      </div></td>
+      <td><div style="position:relative;">
+        <input type="text" inputmode="numeric" id="tac-${i}" placeholder="—" style="width:130px;">
+        <div class="hint" id="hint-tac-${i}"></div>
+      </div></td>`;
+  } else {
+    // Read-only row — hide answers until success
+    tr.innerHTML = firmCell + givenCells + `
+      <td style="color:#ccc;">—</td>
+      <td style="color:#ccc;">—</td>
+      <td style="color:#ccc;">—</td>`;
+  }
+  tbody.appendChild(tr);
+});
+
+document.getElementById("success-total").textContent = "$" + fmt(totalTAC);
+
+// ─── Build full results table ───
+const fullTbody = document.getElementById("full-tbody");
+FIRMS.forEach((f, i) => {
+  const a = answers[i];
+  const isInput = INPUT_FIRMS.includes(f.id);
+  const tr = document.createElement("tr");
+  tr.style.borderBottom = "1px solid #eee";
+  if (isInput) tr.style.background = "#FFFBEB08";
+  tr.innerHTML = `
+    <td class="firm-cell">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${f.color};margin-right:8px;vertical-align:middle;"></span>
+      <span style="font-size:15px;font-weight:700;color:${f.color};vertical-align:middle;">${f.id}</span>
+      <div style="font-size:13px;color:#777;margin-top:2px;padding-left:18px;font-family:'DM Sans',sans-serif;font-weight:500;">
+        MAC = ${fmtMac(f)}
+      </div>
+    </td>
+    <td style="color:#888;">${fmt(f.initialE)}</td>
+    <td style="color:#888;">${fmt(CAP_PER_FIRM)}</td>
+    <td>${fmt(a.abated)}</td>
+    <td>$${fmt(a.mac)}</td>
+    <td><strong>$${fmt(a.tac)}</strong></td>`;
+  fullTbody.appendChild(tr);
+});
+document.getElementById("full-total-initial").textContent = fmt(FIRMS.reduce((a, f) => a + f.initialE, 0));
+document.getElementById("full-total-allowed").textContent = fmt(CAP_PER_FIRM * 6);
+document.getElementById("full-total-abated").textContent = fmt(answers.reduce((a, r) => a + r.abated, 0));
+document.getElementById("full-total-tac").innerHTML = "<strong>$" + fmt(totalTAC) + "</strong>";
+
+// ─── Checking logic ───
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const raw = el.value.replace(/[,$\s]/g, "");
+  const v = parseFloat(raw);
+  return isNaN(v) ? null : v;
+}
+
+function markCell(id, hintId, isCorrect, hint) {
+  const el = document.getElementById(id);
+  const hintEl = document.getElementById(hintId);
+  if (!el) return "skip";
+  if (el.value === "") { el.className = ""; hintEl.textContent = ""; return "empty"; }
+  if (isCorrect) { el.className = "correct"; hintEl.textContent = ""; return "correct"; }
+  el.className = "wrong"; hintEl.textContent = hint || ""; return "wrong";
+}
+
+function close(a, b, tol) { return Math.abs(a - b) <= (tol || 1); }
+
+function checkAnswers() {
+  let allCorrect = true;
+
+  FIRMS.forEach((f, i) => {
+    if (!INPUT_FIRMS.includes(f.id)) return;
+    const a = answers[i];
+
+    // Abatement
+    const abVal = getVal(`abated-${i}`);
+    if (abVal !== null) {
+      const r = markCell(`abated-${i}`, `hint-abated-${i}`, close(abVal, a.abated),
+        "Initial emissions − emissions allowed");
+      if (r !== "correct") allCorrect = false;
+    } else { markCell(`abated-${i}`, `hint-abated-${i}`, false, ""); allCorrect = false; }
+
+    // MAC
+    const macV = getVal(`mac-${i}`);
+    if (macV !== null) {
+      const r = markCell(`mac-${i}`, `hint-mac-${i}`, close(macV, a.mac, 2),
+        `Plug E = ${fmt(CAP_PER_FIRM)} into MAC formula`);
+      if (r !== "correct") allCorrect = false;
+    } else { markCell(`mac-${i}`, `hint-mac-${i}`, false, ""); allCorrect = false; }
+
+    // TAC
+    const tacV = getVal(`tac-${i}`);
+    if (tacV !== null) {
+      const abOk = abVal !== null && close(abVal, a.abated);
+      const hint = !abOk ? "Check your abatement first"
+        : `Area under MAC from ${fmt(CAP_PER_FIRM)} to ${fmt(f.initialE)}`;
+      const r = markCell(`tac-${i}`, `hint-tac-${i}`, close(tacV, a.tac, 100), hint);
+      if (r !== "correct") allCorrect = false;
+    } else { markCell(`tac-${i}`, `hint-tac-${i}`, false, ""); allCorrect = false; }
+  });
+
+  // Show/hide success + full table + total
+  document.getElementById("success-msg").style.display = allCorrect ? "block" : "none";
+  document.getElementById("full-results").style.display = allCorrect ? "block" : "none";
+  document.getElementById("total-cost-display").textContent = allCorrect ? "$" + fmt(totalTAC) : "—";
+  document.getElementById("total-cost-display").style.color = allCorrect ? "#1a1a1a" : "#ccc";
+}
+
+function resetAll() {
+  FIRMS.forEach((f, i) => {
+    if (!INPUT_FIRMS.includes(f.id)) return;
+    ["abated", "mac", "tac"].forEach(field => {
+      const el = document.getElementById(`${field}-${i}`);
+      if (el) { el.value = ""; el.className = ""; }
+      const h = document.getElementById(`hint-${field}-${i}`);
+      if (h) h.textContent = "";
+    });
+  });
+  document.getElementById("total-cost-display").textContent = "—";
+  document.getElementById("total-cost-display").style.color = "#ccc";
+  document.getElementById("success-msg").style.display = "none";
+  document.getElementById("full-results").style.display = "none";
+}
+</script>
+</body>
+</html>
