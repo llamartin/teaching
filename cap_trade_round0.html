@@ -68,9 +68,56 @@ td input.wrong { border-color: #DC2626; background: #FEF2F2; }
 </div>
 
 <div class="card">
+  <h2 style="margin-bottom: 12px;">Marginal Abatement Cost curves</h2>
+  <div id="mac-chart-container" style="margin-bottom: 16px;"></div>
   <p class="dm" style="font-size: 14px; color: #555;">
     <strong>Reminder:</strong> Total cost of abatement = area under the MAC curve up to quantity abated.
   </p>
+</div>
+
+<!-- Success message (appears above worksheet when correct) -->
+<div class="card" id="success-msg" style="display: none; background: #F0FDF4; border-color: #16A34A;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 28px;">✓</span>
+    <div>
+      <h2 style="color: #16A34A; margin-bottom: 4px;">All correct!</h2>
+      <p class="dm" style="font-size: 14px; color: #555;">
+        Under command & control, total industry abatement cost is <strong id="success-total"></strong>.
+        Now think about: is this the cheapest way to achieve 8,880 tons? Which firms are abating
+        "too much" relative to their costs, and which "too little"?
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Full results table (hidden until success, appears above worksheet) -->
+<div class="card" id="full-results">
+  <h2 style="margin-bottom: 12px;">Full results — all firms</h2>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr style="border-bottom: 2px solid #1a1a1a;">
+          <th class="left">Firm</th>
+          <th>Initial<br>emissions</th>
+          <th>Emissions<br>allowed</th>
+          <th>Abatement</th>
+          <th>MAC of last<br>unit abated</th>
+          <th>Total cost of<br>abatement</th>
+        </tr>
+      </thead>
+      <tbody id="full-tbody"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td class="firm-cell dm">Total</td>
+          <td id="full-total-initial" style="color:#888;"></td>
+          <td id="full-total-allowed" style="color:#888;"></td>
+          <td id="full-total-abated"></td>
+          <td style="color:#ccc;">—</td>
+          <td id="full-total-tac"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </div>
 
 <!-- Student input section -->
@@ -106,51 +153,6 @@ td input.wrong { border-color: #DC2626; background: #FEF2F2; }
   </div>
 </div>
 
-<!-- Success message -->
-<div class="card" id="success-msg" style="display: none; background: #F0FDF4; border-color: #16A34A;">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 28px;">✓</span>
-    <div>
-      <h2 style="color: #16A34A; margin-bottom: 4px;">All correct!</h2>
-      <p class="dm" style="font-size: 14px; color: #555;">
-        Under command & control, total industry abatement cost is <strong id="success-total"></strong>.
-        Now think about: is this the cheapest way to achieve 8,880 tons? Which firms are abating
-        "too much" relative to their costs, and which "too little"?
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- Full results table (hidden until success) -->
-<div class="card" id="full-results">
-  <h2 style="margin-bottom: 12px;">Full results — all firms</h2>
-  <div style="overflow-x: auto;">
-    <table>
-      <thead>
-        <tr style="border-bottom: 2px solid #1a1a1a;">
-          <th class="left">Firm</th>
-          <th>Initial<br>emissions</th>
-          <th>Emissions<br>allowed</th>
-          <th>Abatement</th>
-          <th>MAC of last<br>unit abated</th>
-          <th>Total cost of<br>abatement</th>
-        </tr>
-      </thead>
-      <tbody id="full-tbody"></tbody>
-      <tfoot>
-        <tr class="total-row">
-          <td class="firm-cell dm">Total</td>
-          <td id="full-total-initial" style="color:#888;"></td>
-          <td id="full-total-allowed" style="color:#888;"></td>
-          <td id="full-total-abated"></td>
-          <td style="color:#ccc;">—</td>
-          <td id="full-total-tac"></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-</div>
-
 <script>
 const FIRMS = [
   { id: "Red",    initialE: 2000, macA: 4000,  macB: 2,   color: "#DC2626" },
@@ -161,7 +163,7 @@ const FIRMS = [
   { id: "Black",  initialE: 4000, macA: 10000, macB: 2.5, color: "#1E293B" },
 ];
 
-const INPUT_FIRMS = ["Orange", "Blue"]; // firms students must calculate
+const INPUT_FIRMS = ["Red", "Blue"]; // firms students must calculate
 const CAP_PER_FIRM = 1480;
 
 function macVal(firm, E) { return firm.macA - firm.macB * E; }
@@ -315,11 +317,14 @@ function checkAnswers() {
     } else { markCell(`tac-${i}`, `hint-tac-${i}`, false, ""); allCorrect = false; }
   });
 
-  // Show/hide success + full table + total
+  // Show/hide success + full table + chart annotations
   document.getElementById("success-msg").style.display = allCorrect ? "block" : "none";
   document.getElementById("full-results").style.display = allCorrect ? "block" : "none";
+  document.getElementById("worksheet-section").style.display = allCorrect ? "none" : "block";
   document.getElementById("total-cost-display").textContent = allCorrect ? "$" + fmt(totalTAC) : "—";
   document.getElementById("total-cost-display").style.color = allCorrect ? "#1a1a1a" : "#ccc";
+  const ann = document.getElementById("mac-annotations");
+  if (ann) ann.style.display = allCorrect ? "inline" : "none";
 }
 
 function resetAll() {
@@ -336,7 +341,96 @@ function resetAll() {
   document.getElementById("total-cost-display").style.color = "#ccc";
   document.getElementById("success-msg").style.display = "none";
   document.getElementById("full-results").style.display = "none";
+  document.getElementById("worksheet-section").style.display = "block";
+  const ann = document.getElementById("mac-annotations");
+  if (ann) ann.style.display = "none";
 }
+
+// ─── MAC Curves Chart ───
+(function() {
+  const W = 700, H = 400;
+  const pad = { top: 20, right: 30, bottom: 55, left: 70 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const maxE = 4500, maxMAC = 12000;
+
+  function x(e) { return pad.left + (e / maxE) * plotW; }
+  function y(m) { return pad.top + plotH - (m / maxMAC) * plotH; }
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:700px;height:auto;display:block;margin:0 auto;" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Background
+  svg += `<rect x="${pad.left}" y="${pad.top}" width="${plotW}" height="${plotH}" fill="#fafafa" stroke="#ddd" stroke-width="1"/>`;
+
+  // Gridlines
+  for (let e = 0; e <= 4500; e += 500) {
+    svg += `<line x1="${x(e)}" y1="${pad.top}" x2="${x(e)}" y2="${pad.top + plotH}" stroke="#eee" stroke-width="1"/>`;
+    svg += `<text x="${x(e)}" y="${pad.top + plotH + 18}" font-size="11" fill="#888" text-anchor="middle" font-family="'DM Sans',sans-serif">${e.toLocaleString("en-US")}</text>`;
+  }
+  for (let m = 0; m <= 12000; m += 2000) {
+    svg += `<line x1="${pad.left}" y1="${y(m)}" x2="${pad.left + plotW}" y2="${y(m)}" stroke="#eee" stroke-width="1"/>`;
+    svg += `<text x="${pad.left - 10}" y="${y(m) + 4}" font-size="11" fill="#888" text-anchor="end" font-family="'DM Sans',sans-serif">$${m.toLocaleString("en-US")}</text>`;
+  }
+
+  // Axes
+  svg += `<line x1="${pad.left}" y1="${pad.top + plotH}" x2="${pad.left + plotW}" y2="${pad.top + plotH}" stroke="#999" stroke-width="1.5"/>`;
+  svg += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + plotH}" stroke="#999" stroke-width="1.5"/>`;
+
+  // Axis labels
+  svg += `<text x="${pad.left + plotW / 2}" y="${H - 8}" font-size="13" fill="#555" text-anchor="middle" font-family="'DM Sans',sans-serif" font-weight="600">Emissions</text>`;
+  svg += `<text x="16" y="${pad.top + plotH / 2}" font-size="13" fill="#555" text-anchor="middle" font-family="'DM Sans',sans-serif" font-weight="600" transform="rotate(-90,16,${pad.top + plotH / 2})">Cost ($)</text>`;
+
+  // MAC lines
+  FIRMS.forEach(f => {
+    // MAC(E) = macA - macB*E, line from E=0 to E where MAC=0 (or initialE)
+    const eZero = Math.min(f.macA / f.macB, maxE); // where MAC hits 0
+    const eEnd = Math.min(f.initialE, eZero);
+    const macStart = f.macA; // MAC at E=0
+    const macEnd = f.macA - f.macB * eEnd; // MAC at eEnd
+
+    svg += `<line x1="${x(0)}" y1="${y(macStart)}" x2="${x(eEnd)}" y2="${y(macEnd)}" stroke="${f.color}" stroke-width="${f.id === 'Yellow' ? 3.5 : 2.5}" stroke-linecap="round"/>`;
+  });
+
+  // Placeholder for annotations added on success
+  svg += `<g id="mac-annotations" style="display:none;">`;
+
+  // E = 1480 vertical line
+  const eCapX = x(1480);
+  svg += `<line x1="${eCapX}" y1="${pad.top}" x2="${eCapX}" y2="${pad.top + plotH}" stroke="#999" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+  svg += `<text x="${eCapX + 5}" y="${pad.top + 58}" font-size="11" fill="#666" font-family="'DM Sans',sans-serif" font-weight="600">E = 1,480</text>`;
+
+  // Red MAC at E=1480
+  const redF = FIRMS.find(f => f.id === "Red");
+  const redMAC = redF.macA - redF.macB * 1480;
+  svg += `<line x1="${pad.left}" y1="${y(redMAC)}" x2="${eCapX}" y2="${y(redMAC)}" stroke="${redF.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+  svg += `<circle cx="${eCapX}" cy="${y(redMAC)}" r="5" fill="${redF.color}"/>`;
+  svg += `<text x="${pad.left - 10}" y="${y(redMAC) + 4}" font-size="10" fill="${redF.color}" font-weight="600" text-anchor="end" font-family="'DM Sans',sans-serif">$${redMAC.toLocaleString("en-US")}</text>`;
+
+  // Blue MAC at E=1480
+  const blueF = FIRMS.find(f => f.id === "Blue");
+  const blueMAC = blueF.macA - blueF.macB * 1480;
+  svg += `<line x1="${pad.left}" y1="${y(blueMAC)}" x2="${eCapX}" y2="${y(blueMAC)}" stroke="${blueF.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+  svg += `<circle cx="${eCapX}" cy="${y(blueMAC)}" r="5" fill="${blueF.color}"/>`;
+  svg += `<text x="${pad.left - 10}" y="${y(blueMAC) + 4}" font-size="10" fill="${blueF.color}" font-weight="600" text-anchor="end" font-family="'DM Sans',sans-serif">$${blueMAC.toLocaleString("en-US")}</text>`;
+
+  svg += `</g>`;
+
+  // Legend
+  const legendY = pad.top + 10;
+  const legendX = pad.left + 20;
+  const cols = 3;
+  FIRMS.forEach((f, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const lx = legendX + col * 130;
+    const ly = legendY + row * 20;
+    svg += `<line x1="${lx}" y1="${ly}" x2="${lx + 20}" y2="${ly}" stroke="${f.color}" stroke-width="${f.id === 'Yellow' ? 3 : 2.5}" stroke-linecap="round"/>`;
+    svg += `<text x="${lx + 26}" y="${ly + 4}" font-size="12" fill="${f.color}" font-weight="700" font-family="'DM Sans',sans-serif">${f.id}</text>`;
+  });
+
+  svg += `</svg>`;
+  document.getElementById("mac-chart-container").innerHTML = svg;
+})();
 </script>
 </body>
 </html>
