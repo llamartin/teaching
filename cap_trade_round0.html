@@ -399,16 +399,26 @@ function resetAll() {
   svg += `<line x1="${eCapX}" y1="${pad.top}" x2="${eCapX}" y2="${pad.top + plotH}" stroke="#999" stroke-width="1.5" stroke-dasharray="6,4"/>`;
   svg += `<text x="${eCapX + 5}" y="${pad.top + 58}" font-size="11" fill="#666" font-family="'DM Sans',sans-serif" font-weight="600">E = 1,480</text>`;
 
-  // Red MAC at E=1480
+  // Red: shaded area under MAC from E=1480 to E=2000 (initialE)
+  // MAC is linear, so it's a trapezoid (or triangle if MAC=0 at initialE)
+  // Vertices: (1480, MAC(1480)), (2000, MAC(2000)), (2000, 0), (1480, 0)
   const redF = FIRMS.find(f => f.id === "Red");
   const redMAC = redF.macA - redF.macB * 1480;
+  const redMACend = redF.macA - redF.macB * redF.initialE; // MAC at initialE
+  svg += `<polygon points="${eCapX},${y(redMAC)} ${x(redF.initialE)},${y(Math.max(redMACend, 0))} ${x(redF.initialE)},${y(0)} ${eCapX},${y(0)}" fill="${redF.color}" opacity="0.12"/>`;
+
+  // Red MAC markers
   svg += `<line x1="${pad.left}" y1="${y(redMAC)}" x2="${eCapX}" y2="${y(redMAC)}" stroke="${redF.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
   svg += `<circle cx="${eCapX}" cy="${y(redMAC)}" r="5" fill="${redF.color}"/>`;
   svg += `<text x="${pad.left - 10}" y="${y(redMAC) + 4}" font-size="10" fill="${redF.color}" font-weight="600" text-anchor="end" font-family="'DM Sans',sans-serif">$${redMAC.toLocaleString("en-US")}</text>`;
 
-  // Blue MAC at E=1480
+  // Blue: shaded area under MAC from E=1480 to E=4000 (initialE)
   const blueF = FIRMS.find(f => f.id === "Blue");
   const blueMAC = blueF.macA - blueF.macB * 1480;
+  const blueMACend = blueF.macA - blueF.macB * blueF.initialE;
+  svg += `<polygon points="${eCapX},${y(blueMAC)} ${x(blueF.initialE)},${y(Math.max(blueMACend, 0))} ${x(blueF.initialE)},${y(0)} ${eCapX},${y(0)}" fill="${blueF.color}" opacity="0.12"/>`;
+
+  // Blue MAC markers
   svg += `<line x1="${pad.left}" y1="${y(blueMAC)}" x2="${eCapX}" y2="${y(blueMAC)}" stroke="${blueF.color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
   svg += `<circle cx="${eCapX}" cy="${y(blueMAC)}" r="5" fill="${blueF.color}"/>`;
   svg += `<text x="${pad.left - 10}" y="${y(blueMAC) + 4}" font-size="10" fill="${blueF.color}" font-weight="600" text-anchor="end" font-family="'DM Sans',sans-serif">$${blueMAC.toLocaleString("en-US")}</text>`;
