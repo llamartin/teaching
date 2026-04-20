@@ -54,20 +54,21 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 /* right column */
 .rcol{display:flex;flex-direction:column;gap:.9rem;}
 /* welfare card */
-.wcard{border-radius:var(--rlg);padding:13px 18px;display:flex;align-items:flex-start;gap:20px;transition:background .2s,border-color .2s;}
+.wcard{border-radius:var(--rlg);padding:13px 18px;display:flex;align-items:flex-start;gap:16px;transition:background .2s,border-color .2s;}
 .wcard.pos{background:var(--bgi);border:0.5px solid rgba(24,95,165,.25);}
 .wcard.neg{background:var(--bgr);border:0.5px solid rgba(139,26,26,.25);}
 .wcard.neu{background:var(--bg2);border:0.5px solid var(--bd);}
-.wl{flex:0 0 auto;}
-.wlbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.wl{flex:0 0 auto;max-width:200px;}
+.wlbl{font-size:11px;font-weight:500;line-height:1.4;margin-bottom:4px;}
 .wcard.pos .wlbl,.wcard.pos .wnum,.wcard.pos .wunit,.wcard.pos .wdesc{color:var(--ti);}
 .wcard.neg .wlbl,.wcard.neg .wnum,.wcard.neg .wunit,.wcard.neg .wdesc{color:var(--tr);}
 .wcard.neu .wlbl,.wcard.neu .wunit,.wcard.neu .wdesc{color:var(--t2);}
 .wcard.neu .wnum{color:var(--t1);}
-.wnum{font-size:36px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;}
-.wunit{font-size:11px;margin-top:3px;}
-.wdesc{font-size:12px;line-height:1.6;padding-top:2px;}
-.wformula{font-size:13px;margin-top:4px;font-family:Georgia,serif;}
+.wnum{font-size:40px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;}
+.wunit{display:none;}
+.wdesc{font-size:11px;line-height:1.5;margin-top:5px;}
+.wimg{flex:1;min-width:0;}
+.wimg img{width:100%;height:auto;display:block;border-radius:var(--rmd);}
 /* charts */
 .cg{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;}
 @media(max-width:600px){.cg{grid-template-columns:1fr;}}
@@ -113,14 +114,14 @@ footer{text-align:center;font-size:11px;color:var(--t2);padding:1.3rem 1rem;bord
             <button class="disc-btn active" id="btn-nordhaus" onclick="setDiscount('nordhaus')">Nordhaus</button>
             <button class="disc-btn" id="btn-stern" onclick="setDiscount('stern')">Stern</button>
           </div>
-          <div class="disc-note" id="disc-note">≈ 5.5% total (r = 1.5% time pref + g·η consumption growth)</div>
-          <div class="pd" style="margin-top:2px;">The full discount rate used in the Ramsey formula: <em>r = ρ + η·g</em>. BAU welfare is recalculated for each setting.</div>
+          <div class="disc-note" id="disc-note">5.5% total (r = 1.5% time pref + g·η consumption growth)</div>
+          <div class="pd" style="margin-top:2px;">BAU welfare is recalculated for each setting.</div>
         </div>
 
         <div class="pg">
           <div class="pgt">Damage function — drag points</div>
           <div class="cw"><canvas id="cv-dmg" height="130"></canvas></div>
-          <div class="ch">x = degC above pre-industrial (0-6degC) · y = % GDP lost</div>
+          <div class="ch">x = degC above pre-industrial · y = % GDP lost</div>
         </div>
 
         <div class="pg">
@@ -130,7 +131,7 @@ footer{text-align:center;font-size:11px;color:var(--t2);padding:1.3rem 1rem;bord
         </div>
 
         <div class="pg">
-          <div class="pgt">Carbon intensity</div>
+          <div class="pgt">Carbon intensity of output</div>
           <div class="pr">
             <div class="pt"><span class="pn">Autonomous decline</span><span class="pv" id="v-sigma">1.0%/yr</span></div>
             <div class="pd">Annual "free" decarbonisation from tech change</div>
@@ -146,11 +147,13 @@ footer{text-align:center;font-size:11px;color:var(--t2);padding:1.3rem 1rem;bord
 
     <div id="wcard" class="wcard neu">
       <div class="wl">
-        <div class="wlbl">PV utility vs business-as-usual</div>
+        <div class="wlbl">Index for &Sigma; PV utility from consumption vs Business-As-Usual (BAU)</div>
         <div class="wnum" id="w-num">—</div>
-        <div class="wunit">Index for &Sigma; PV utility from consumption vs Business-As-Usual (BAU)</div>
+        <div class="wdesc" id="w-desc">Sum of discounted log-consumption utility across all periods, relative to the no-abatement baseline, scaled by 10,000. Positive = abatement raises welfare; negative = abatement costs exceed avoided damages.</div>
       </div>
-      <div class="wdesc" id="w-desc">Sum of discounted log-consumption utility across all periods, relative to the no-abatement baseline, scaled by 10,000. Positive = abatement raises welfare; negative = abatement costs exceed avoided damages.</div>
+      <div class="wimg">
+        <img src="DICE6.png" alt="DICE model causal diagram showing how emissions, CO2 stock, temperature, and GDP damages are linked">
+      </div>
     </div>
 
     <div class="panel">
@@ -229,8 +232,8 @@ const T0     = 1.0;    // initial temperature 2025 (degC above pre-industrial)
   We use the full r directly in discounting.
 */
 const DISC_PRESETS = {
-  nordhaus: { r: 0.055, label: '~ 5.5% total (rho=1.5% + eta*g, Nordhaus DICE)' },
-  stern:    { r: 0.014, label: '~ 1.4% total (rho=0.1% + eta*g, Stern review)' }
+  nordhaus: { r: 0.055, label: '5.5% total (rho=1.5% + eta*g, Nordhaus DICE)' },
+  stern:    { r: 0.014, label: '1.4% total (rho=0.1% + eta*g, Stern review)' }
 };
 
 let discMode = 'nordhaus';
