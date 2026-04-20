@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DICE Model Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#ffffff;--bg2:#f6f5f1;--bg3:#f0ede8;--bgi:#e6f1fb;--bgr:#fdf0f0;
+  --t1:#1a1a18;--t2:#6b6a65;--ti:#185fa5;--tr:#8b1a1a;
+  --bd:rgba(0,0,0,0.12);--bds:rgba(0,0,0,0.22);
+  --rsm:6px;--rmd:8px;--rlg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--bgi:#0c2a45;--bgr:#2a0a0a;
+  --t1:#f0ede8;--t2:#9c9a93;--ti:#85b7eb;--tr:#e07070;
+  --bd:rgba(255,255,255,0.10);--bds:rgba(255,255,255,0.20);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg3);color:var(--t1);font-size:15px;line-height:1.6;min-height:100vh;}
+.hdr{background:var(--bg);border-bottom:0.5px solid var(--bd);padding:1rem 2rem;position:sticky;top:0;z-index:10;}
+.hdr-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.hdr h1{font-size:19px;font-weight:500;letter-spacing:-0.01em;}
+.hdr-sub{font-size:12px;color:var(--t2);}
+.reset-btn{font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid var(--bds);background:transparent;color:var(--t2);cursor:pointer;transition:color .15s,border-color .15s;}
+.reset-btn:hover{color:var(--t1);border-color:var(--t1);}
+.main{max-width:1200px;margin:0 auto;padding:1.3rem 1.3rem 4rem;display:grid;grid-template-columns:300px 1fr;gap:1.3rem;align-items:start;}
+@media(max-width:860px){.main{grid-template-columns:1fr;padding:1rem;}}
+.panel{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--rlg);overflow:hidden;}
+.ph{padding:10px 15px 8px;border-bottom:0.5px solid var(--bd);}
+.ph h2{font-size:10px;font-weight:500;color:var(--t2);text-transform:uppercase;letter-spacing:.07em;}
+.pb{padding:12px 15px;}
+.pg{margin-bottom:.9rem;}
+.pg:last-child{margin-bottom:0;}
+.pgt{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t2);margin-bottom:8px;padding-bottom:4px;border-bottom:0.5px solid var(--bd);}
+.pr{margin-bottom:9px;}
+.pt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+.pn{font-size:13px;font-weight:500;color:var(--t1);}
+.pv{font-size:13px;font-weight:500;color:var(--ti);font-variant-numeric:tabular-nums;min-width:56px;text-align:right;}
+.pd{font-size:11px;color:var(--t2);margin-bottom:3px;line-height:1.35;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--bds);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--t1);cursor:pointer;transition:transform .1s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--t1);cursor:pointer;border:none;}
+/* discount toggle */
+.disc-toggle{display:flex;gap:6px;margin-bottom:4px;}
+.disc-btn{flex:1;font-size:12px;padding:5px 0;border-radius:var(--rsm);border:0.5px solid var(--bds);background:transparent;color:var(--t2);cursor:pointer;transition:all .15s;text-align:center;}
+.disc-btn.active{background:var(--t1);color:var(--bg);border-color:var(--t1);}
+.disc-note{font-size:11px;color:var(--t2);margin-bottom:6px;line-height:1.35;}
+/* curve editors */
+.cw canvas{display:block;width:100%;cursor:crosshair;touch-action:none;}
+.ch{font-size:10px;color:var(--t2);margin-top:3px;}
+/* right column */
+.rcol{display:flex;flex-direction:column;gap:.9rem;}
+/* welfare card */
+.wcard{border-radius:var(--rlg);padding:13px 18px;display:flex;align-items:flex-start;gap:20px;transition:background .2s,border-color .2s;}
+.wcard.pos{background:var(--bgi);border:0.5px solid rgba(24,95,165,.25);}
+.wcard.neg{background:var(--bgr);border:0.5px solid rgba(139,26,26,.25);}
+.wcard.neu{background:var(--bg2);border:0.5px solid var(--bd);}
+.wl{flex:0 0 auto;}
+.wlbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.wcard.pos .wlbl,.wcard.pos .wnum,.wcard.pos .wunit,.wcard.pos .wdesc{color:var(--ti);}
+.wcard.neg .wlbl,.wcard.neg .wnum,.wcard.neg .wunit,.wcard.neg .wdesc{color:var(--tr);}
+.wcard.neu .wlbl,.wcard.neu .wunit,.wcard.neu .wdesc{color:var(--t2);}
+.wcard.neu .wnum{color:var(--t1);}
+.wnum{font-size:36px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;}
+.wunit{font-size:11px;margin-top:3px;}
+.wdesc{font-size:12px;line-height:1.6;padding-top:2px;}
+.wformula{font-size:13px;margin-top:4px;font-family:Georgia,serif;}
+/* charts */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;}
+@media(max-width:600px){.cg{grid-template-columns:1fr;}}
+.cc{background:var(--bg2);border-radius:var(--rmd);padding:10px 11px;}
+.cl{font-size:11px;color:var(--t2);margin-bottom:6px;line-height:1.4;display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap;}
+.cl-badge{font-size:10px;font-weight:500;font-variant-numeric:tabular-nums;padding:1px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;}
+.badge-blue{background:rgba(24,95,165,0.12);color:var(--ti);}
+.badge-red{background:rgba(163,45,45,0.12);color:#a32d2d;}
+.cw2{position:relative;height:155px;}
+footer{text-align:center;font-size:11px;color:var(--t2);padding:1.3rem 1rem;border-top:0.5px solid var(--bd);margin-top:.5rem;}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <div>
+      <h1>DICE Model Simulator</h1>
+      <div class="hdr-sub">After Nordhaus (2017) · explore how parameters shape the welfare cost of climate change</div>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">↺ Reset to defaults</button>
+  </div>
+</header>
+
+<main class="main">
+  <aside>
+    <div class="panel">
+      <div class="ph"><h2>Parameters</h2></div>
+      <div class="pb">
+
+        <div class="pg">
+          <div class="pgt">Policy</div>
+          <div class="pr">
+            <div class="pt"><span class="pn">Abatement rate <em>μ</em></span><span class="pv" id="v-abate">0%</span></div>
+            <div class="pd">Fraction of emissions abated each period</div>
+            <input type="range" id="sl-abate" min="0" max="1" step="0.01" value="0">
+          </div>
+        </div>
+
+        <div class="pg">
+          <div class="pgt">Discount rate</div>
+          <div class="disc-toggle">
+            <button class="disc-btn active" id="btn-nordhaus" onclick="setDiscount('nordhaus')">Nordhaus</button>
+            <button class="disc-btn" id="btn-stern" onclick="setDiscount('stern')">Stern</button>
+          </div>
+          <div class="disc-note" id="disc-note">≈ 5.5% total (r = 1.5% time pref + g·η consumption growth)</div>
+          <div class="pd" style="margin-top:2px;">The full discount rate used in the Ramsey formula: <em>r = ρ + η·g</em>. BAU welfare is recalculated for each setting.</div>
+        </div>
+
+        <div class="pg">
+          <div class="pgt">Damage function — drag points</div>
+          <div class="cw"><canvas id="cv-dmg" height="130"></canvas></div>
+          <div class="ch">x = degC above pre-industrial (0-6degC) · y = % GDP lost</div>
+        </div>
+
+        <div class="pg">
+          <div class="pgt">Abatement cost curve — drag points</div>
+          <div class="cw"><canvas id="cv-mac" height="130"></canvas></div>
+          <div class="ch">x = abatement rate (%) · y = cost (% GDP)</div>
+        </div>
+
+        <div class="pg">
+          <div class="pgt">Carbon intensity</div>
+          <div class="pr">
+            <div class="pt"><span class="pn">Autonomous decline</span><span class="pv" id="v-sigma">1.0%/yr</span></div>
+            <div class="pd">Annual "free" decarbonisation from tech change</div>
+            <input type="range" id="sl-sigma" min="0" max="3" step="0.05" value="1.0">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </aside>
+
+  <div class="rcol">
+
+    <div id="wcard" class="wcard neu">
+      <div class="wl">
+        <div class="wlbl">PV utility vs business-as-usual</div>
+        <div class="wnum" id="w-num">—</div>
+        <div class="wunit">Index for &Sigma; PV utility from consumption vs Business-As-Usual (BAU)</div>
+      </div>
+      <div class="wdesc" id="w-desc">Sum of discounted log-consumption utility across all periods, relative to the no-abatement baseline, scaled by 10,000. Positive = abatement raises welfare; negative = abatement costs exceed avoided damages.</div>
+    </div>
+
+    <div class="panel">
+      <div class="cg">
+
+        <div class="cc">
+          <div class="cl">
+            <span>Atmospheric CO₂ (ppm)</span>
+          </div>
+          <div class="cw2"><canvas id="c-co2" role="img" aria-label="CO2 path">CO2</canvas></div>
+        </div>
+
+        <div class="cc">
+          <div class="cl">
+            <span>Temperature above pre-industrial (°C)</span>
+            <span class="cl-badge badge-red" id="b-temp">—</span>
+          </div>
+          <div class="cw2"><canvas id="c-temp" role="img" aria-label="Temperature path">Temperature</canvas></div>
+        </div>
+
+        <div class="cc">
+          <div class="cl">
+            <span>Net GDP (index, 2025 = 100)</span>
+            <span class="cl-badge badge-blue" id="b-dam">—</span>
+          </div>
+          <div class="cw2"><canvas id="c-gdp" role="img" aria-label="GDP path">GDP</canvas></div>
+        </div>
+
+        <div class="cc">
+          <div class="cl">
+            <span>Consumption (index, 2025 = 100)</span>
+          </div>
+          <div class="cw2"><canvas id="c-cons" role="img" aria-label="Consumption path">Consumption</canvas></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>Based on Nordhaus, W.D. (2017), "Revisiting the Social Cost of Carbon." <em>PNAS</em> 114(7).</footer>
+
+<script>
+/* =========================================================
+   CONSTANTS
+   Climate is calibrated to actual ppm units so the BAU path
+   matches DICE 2016: ~1degC now, ~3.3degC by 2100.
+   M0 = 424 ppm (actual 2025 CO2), M_PI = 280 ppm (pre-industrial)
+   SIGMA0 = 0.047: current global emissions ~37 GtCO2/yr ~ 4.7 ppm/yr;
+     over DT=5yr and GDP index 100: sigma = 23.5/(100x5) = 0.047
+   TAU = 300: effective atmospheric CO2 lifetime (accounts for
+     land/ocean uptake; DICE uses a multi-box model, this single-box
+     approximation gives similar CO2 trajectories to 2100)
+   Temperature inertia /50: calibrated so BAU reaches ~3.3degC by 2100
+   ========================================================= */
+const SHOW   = 16;
+const DT     = 5;
+const YEARS  = Array.from({length:SHOW},(_,i)=>2025+i*DT);
+const M_PI   = 280;    // pre-industrial CO2 ppm
+const M0     = 424;    // 2025 actual CO2 ppm
+const TAU    = 300;    // effective atmospheric CO2 lifetime (years)
+const ALPHA  = 5.35;   // radiative forcing: F = 5.35*ln(M/M_PI)
+const ECS    = 3.0;    // equilibrium climate sensitivity (degC per doubling)
+const G      = 0.023;  // GDP growth rate
+const ETA    = 1.45;   // elasticity of marginal utility
+const SIGMA0 = 0.047;  // carbon intensity (ppm per GDP-unit per year)
+const FEX    = 0.5;    // exogenous non-CO2 forcing by 2100 (W/m2)
+const CSHARE = 0.8;    // consumption share of net GDP
+const T0     = 1.0;    // initial temperature 2025 (degC above pre-industrial)
+
+/*
+  Full Ramsey discount rate: r = rho + eta*g
+  Nordhaus: rho=0.015, eta=1.45, g=0.023 -> r ~ 0.015 + 1.45x0.023 ~ 0.0484 ~ 5.5% (DICE uses ~5.5%)
+  Stern:    rho=0.001, eta=1.0,  g=0.013 -> r ~ 0.001 + 1.0x0.013  ~ 0.014  ~ 1.4%
+  We use the full r directly in discounting.
+*/
+const DISC_PRESETS = {
+  nordhaus: { r: 0.055, label: '~ 5.5% total (rho=1.5% + eta*g, Nordhaus DICE)' },
+  stern:    { r: 0.014, label: '~ 1.4% total (rho=0.1% + eta*g, Stern review)' }
+};
+
+let discMode = 'nordhaus';
+
+function getDisc(){ return DISC_PRESETS[discMode].r; }
+
+/* =========================================================
+   DEFAULT CURVE POINTS
+   Damage: Nordhaus quadratic 0.00236*T^2 (% GDP lost), up to 6degC.
+   MAC: 6 equally-spaced points on Nordhaus theta1=0.05, theta2=2.8
+     (cost = 0.05*mu^2.8 as % GDP). Equal spacing means no control
+     point sits at a likely optimum, so the peak floats freely.
+   ========================================================= */
+const DEFAULT_DMG = [[0,0],[1,0.2],[2,0.9],[3,2.1],[4,3.8],[6,8.5]];
+const DEFAULT_MAC = [[0,0],[20,0.055],[40,0.384],[60,1.196],[80,2.677],[100,5.000]];
+
+let dmgPts = DEFAULT_DMG.map(p=>[...p]);
+let macPts = DEFAULT_MAC.map(p=>[...p]);
+
+// Monotone cubic spline (Fritsch-Carlson) -- no kinks, so the welfare
+// optimum floats freely and responds to curve changes without being
+// pinned to a control point.
+function interp(pts, x){
+  const n = pts.length;
+  if(x <= pts[0][0]) return pts[0][1];
+  if(x >= pts[n-1][0]) return pts[n-1][1];
+  let i=0;
+  while(i < n-2 && x > pts[i+1][0]) i++;
+  const h  = pts[i+1][0] - pts[i][0];
+  const t  = (x - pts[i][0]) / h;
+  // Finite difference slopes
+  const sl = [];
+  for(let k=0;k<n-1;k++) sl.push((pts[k+1][1]-pts[k][1])/(pts[k+1][0]-pts[k][0]));
+  // Tangents
+  const m = new Array(n).fill(0);
+  m[0]   = sl[0];
+  m[n-1] = sl[n-2];
+  for(let k=1;k<n-1;k++){
+    m[k] = sl[k-1]*sl[k]<=0 ? 0 : (sl[k-1]+sl[k])/2;
+  }
+  // Fritsch-Carlson monotonicity
+  for(let k=0;k<n-1;k++){
+    if(Math.abs(sl[k])<1e-12){m[k]=m[k+1]=0;continue;}
+    const a=m[k]/sl[k], b=m[k+1]/sl[k];
+    const r=a*a+b*b;
+    if(r>9){const tau=3/Math.sqrt(r);m[k]=tau*a*sl[k];m[k+1]=tau*b*sl[k];}
+  }
+  const t2=t*t, t3=t2*t;
+  return (2*t3-3*t2+1)*pts[i][1] + (t3-2*t2+t)*h*m[i] +
+         (-2*t3+3*t2)*pts[i+1][1] + (t3-t2)*h*m[i+1];
+}
+const dmg  = T  => Math.max(0, interp(dmgPts, T))    / 100;
+const cost = mu => Math.max(0, interp(macPts, mu*100)) / 100;
+
+/* =========================================================
+   MODEL
+   ========================================================= */
+function runModel(mu, disc, sigDec){
+  const lam = ALPHA*Math.log(2)/ECS;
+  let M=M0, T=T0, GDP=100, sig=SIGMA0;
+  const co2=[M0], temp=[T0], gnet=[], cons=[];
+  let pvGDP=0, pvDam=0, pvUtil=0;
+  for(let t=0;t<SHOW;t++){
+    const df  = Math.pow(1+disc, -t*DT);
+    const E   = sig*GDP*(1-mu)*DT;       // ppm emitted this period
+    // CO2: ~50% of net emissions absorbed by land/ocean, rest stays
+    // Slow decay toward M_PI with timescale TAU
+    M = Math.max(M_PI+5, M*(1-DT/TAU) + 0.5*E + M_PI*DT/TAU);
+    const F = ALPHA*Math.log(M/M_PI) + FEX*Math.min(t/8, 1.0);
+    // Temperature adjusts toward equilibrium with ~50yr inertia
+    T = Math.max(0, T + ((F - lam*T)/50)*DT);
+    const D  = dmg(T);
+    const AC = cost(mu);
+    const gn = GDP*(1-D)*(1-AC);
+    const C  = CSHARE*gn;
+    pvGDP  += GDP*df;
+    pvDam  += D*GDP*df;
+    pvUtil += Math.log(Math.max(1e-9,C))*df;
+    gnet.push(gn); cons.push(C);
+    sig *= (1-sigDec);
+    GDP *= (1+G*DT)*(1-D);
+    if(t+1<SHOW){ co2.push(M); temp.push(T); }
+  }
+  return { co2, temp, gnet, cons,
+    pvDamPct: pvDam/pvGDP*100, pvUtil,
+    peakTemp: Math.max(...temp) };
+}
+
+/* =========================================================
+   CHARTS -- fixed y-axes so policy vs BAU differences are visible
+   ========================================================= */
+const CI={};
+const BL='#185FA5', BLF='rgba(24,95,165,0.12)';
+const GR='#3B6D11', GRF='rgba(59,109,17,0.12)';
+const OR='#D85A30', ORF='rgba(216,90,48,0.10)';
+const RD='#a32d2d', RDF='rgba(163,45,45,0.10)';
+const AM='#BA7517';
+
+// We compute BAU once to set fixed axes, then reuse
+let axisCache = null;
+
+function computeAxes(disc, sigDec){
+  const bau = runModel(0, disc, sigDec);
+  return {
+    co2Max:  Math.ceil(Math.max(...bau.co2)  / 50) * 50 + 50,
+    co2Min:  Math.floor(Math.min(...bau.co2) / 50) * 50,
+    tempMax: Math.ceil((Math.max(...bau.temp) + 0.5) * 2) / 2,
+    gdpMin:  Math.floor(Math.min(...bau.gnet) / 20) * 20,
+    gdpMax:  Math.ceil(Math.max(...bau.gnet)  / 20) * 20 + 20,
+    consMin: Math.floor(Math.min(...bau.cons) / 20) * 20,
+    consMax: Math.ceil(Math.max(...bau.cons)  / 20) * 20 + 20,
+  };
+}
+
+function mkChart(id, datasets, yMin, yMax, extraOpts){
+  const ctx=document.getElementById(id);
+  if(!ctx) return;
+  if(CI[id]) CI[id].destroy();
+  CI[id]=new Chart(ctx,{
+    type:'line',
+    data:{labels:YEARS, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:100},
+      plugins:{
+        legend:{display:true, labels:{font:{size:10},boxWidth:8,padding:8,usePointStyle:false}},
+        ...((extraOpts&&extraOpts.plugins)||{})
+      },
+      scales:{
+        x:{ticks:{font:{size:10},color:'#888',maxRotation:0}, grid:{color:'rgba(128,128,128,0.07)'}},
+        y:{ticks:{font:{size:10},color:'#888'}, grid:{color:'rgba(128,128,128,0.07)'},
+           min:yMin, max:yMax}
+      }
+    }
+  });
+}
+
+function ld(data,col,fill,label,dash){
+  return {label:label||'', data, borderColor:col,
+    backgroundColor:fill||'transparent', fill:!!fill,
+    tension:0.4, pointRadius:0, borderWidth:2, borderDash:dash||[]};
+}
+
+/* =========================================================
+   UPDATE
+   ========================================================= */
+function update(){
+  const mu     = +document.getElementById('sl-abate').value;
+  const disc   = getDisc();
+  const sigDec = +document.getElementById('sl-sigma').value / 100;
+
+  const pol  = runModel(mu, disc, sigDec);
+  const bau  = runModel(0,  disc, sigDec);  // BAU recalculated with current discount rate
+
+  // Welfare delta -- scaled to basis points (x10000) for readability
+  const dU = pol.pvUtil - bau.pvUtil;
+  const dU_bp = dU * 10000;
+
+  // Welfare card
+  const wcard = document.getElementById('wcard');
+  wcard.className = 'wcard ' + (Math.abs(dU_bp)<0.5 ? 'neu' : dU_bp>0 ? 'pos' : 'neg');
+  document.getElementById('w-num').textContent = (dU_bp>=0?'+':'')+dU_bp.toFixed(1);
+  document.getElementById('w-desc').textContent = dU_bp>0.5
+    ? 'Abating '+Math.round(mu*100)+'% of emissions raises welfare vs no abatement. Avoided damages outweigh abatement costs.'
+    : dU_bp<-0.5
+    ? 'Abating '+Math.round(mu*100)+'% of emissions lowers welfare vs no abatement. Abatement costs exceed avoided damages at this discount rate.'
+    : 'This abatement rate leaves welfare approximately equal to business-as-usual.';
+
+  // Badges
+  document.getElementById('b-temp').textContent =
+    'Policy: '+pol.peakTemp.toFixed(2)+'degC * BAU: '+bau.peakTemp.toFixed(2)+'degC';
+  document.getElementById('b-dam').textContent =
+    'PV damages: '+pol.pvDamPct.toFixed(1)+'% GDP';
+
+  // Fixed axes (recompute only if discount or sigma changed, not mu)
+  axisCache = computeAxes(disc, sigDec);
+  const ax = axisCache;
+
+  const muLbl = 'mu='+Math.round(mu*100)+'%';
+
+  // CO2 -- fixed axis based on BAU range
+  mkChart('c-co2',
+    [ld(bau.co2, OR, null, 'BAU', [4,3]),
+     ld(pol.co2, BL, BLF,  muLbl)],
+    ax.co2Min, ax.co2Max
+  );
+
+  // Temperature -- fixed max = 1.3x BAU peak, rounded up to 0.5
+  mkChart('c-temp',
+    [ld(bau.temp, AM, null, 'BAU', [4,3]),
+     ld(pol.temp, RD, RDF,  muLbl)],
+    0, ax.tempMax
+  );
+
+  // GDP -- gross line + policy net + BAU net
+  // Axis: min from BAU net, max from gross
+  const grossMax = Math.ceil(Math.max(...bau.gnet, pol.gnet[pol.gnet.length-1]) / 20)*20 + 20;
+  mkChart('c-gdp',
+    [ld(bau.gnet, OR, null, 'BAU', [4,3]),
+     ld(pol.gnet, GR, GRF,  muLbl)],
+    ax.gdpMin, grossMax
+  );
+
+  // Consumption -- same axis range as GDP net
+  mkChart('c-cons',
+    [ld(bau.cons, OR, null, 'BAU', [4,3]),
+     ld(pol.cons, BL, BLF,  muLbl)],
+    ax.consMin, ax.consMax
+  );
+}
+
+/* =========================================================
+   DISCOUNT TOGGLE
+   ========================================================= */
+function setDiscount(mode){
+  discMode = mode;
+  document.getElementById('btn-nordhaus').className = 'disc-btn'+(mode==='nordhaus'?' active':'');
+  document.getElementById('btn-stern').className    = 'disc-btn'+(mode==='stern'?' active':'');
+  document.getElementById('disc-note').textContent  = DISC_PRESETS[mode].label;
+  update();
+}
+
+/* =========================================================
+   RESET
+   ========================================================= */
+function resetAll(){
+  // Sliders
+  document.getElementById('sl-abate').value = '0';
+  document.getElementById('v-abate').textContent = '0%';
+  document.getElementById('sl-sigma').value = '1.0';
+  document.getElementById('v-sigma').textContent = '1.00%/yr';
+  // Discount
+  discMode = 'nordhaus';
+  document.getElementById('btn-nordhaus').className = 'disc-btn active';
+  document.getElementById('btn-stern').className    = 'disc-btn';
+  document.getElementById('disc-note').textContent  = DISC_PRESETS.nordhaus.label;
+  // Curves -- mutate in place so curve editors (which close over the array) see the reset
+  const dmgDef = DEFAULT_DMG.map(p=>[...p]);
+  const macDef = DEFAULT_MAC.map(p=>[...p]);
+  dmgPts.splice(0, dmgPts.length, ...dmgDef);
+  macPts.splice(0, macPts.length, ...macDef);
+  redrawCurves();
+  update();
+}
+
+let dmgRedraw = null, macRedraw = null;
+function redrawCurves(){ if(dmgRedraw) dmgRedraw(); if(macRedraw) macRedraw(); }
+
+/* =========================================================
+   SLIDERS
+   ========================================================= */
+function bindSlider(id,vid,fmt){
+  document.getElementById(id).addEventListener('input',e=>{
+    document.getElementById(vid).textContent = fmt(e.target.value);
+    update();
+  });
+}
+bindSlider('sl-abate','v-abate', x=>Math.round(x*100)+'%');
+bindSlider('sl-sigma','v-sigma', x=>(+x).toFixed(2)+'%/yr');
+
+/* =========================================================
+   DRAGGABLE CURVE EDITOR
+   ========================================================= */
+function makeCurveEditor(canvasId, pts, xLbl, yLbl, xMax, yMax, onchange){
+  const canvas = document.getElementById(canvasId);
+  const H = canvas.height;
+  const PAD = {l:36,r:10,t:8,b:26};
+  let drag = null;
+  const W = () => canvas.clientWidth || 270;
+
+  function toCv(px,py){
+    return [PAD.l+(px/xMax)*(W()-PAD.l-PAD.r),
+            H-PAD.b-(py/yMax)*(H-PAD.t-PAD.b)];
+  }
+  function fromCv(cx,cy){
+    return [Math.max(0,Math.min(xMax,(cx-PAD.l)/(W()-PAD.l-PAD.r)*xMax)),
+            Math.max(0,Math.min(yMax,(H-PAD.b-cy)/(H-PAD.t-PAD.b)*yMax))];
+  }
+
+  function draw(){
+    canvas.width = W();
+    const ctx = canvas.getContext('2d');
+    const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+    const t2   = dark?'#9c9a93':'#6b6a65';
+    const grid = dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+    const line = dark?'#85b7eb':'#185FA5';
+    const fill = dark?'rgba(24,95,165,0.18)':'rgba(24,95,165,0.10)';
+    const dot  = dark?'#f0ede8':'#1a1a18';
+    const bg   = dark?'#252523':'#f6f5f1';
+
+    ctx.clearRect(0,0,canvas.width,H);
+    ctx.fillStyle=bg;
+    if(ctx.roundRect){ctx.beginPath();ctx.roundRect(0,0,canvas.width,H,6);ctx.fill();}
+    else ctx.fillRect(0,0,canvas.width,H);
+
+    ctx.strokeStyle=grid; ctx.lineWidth=0.5;
+    for(let i=0;i<=4;i++){
+      const y=PAD.t+(i/4)*(H-PAD.t-PAD.b);
+      ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W()-PAD.r,y);ctx.stroke();
+      const x=PAD.l+(i/4)*(W()-PAD.l-PAD.r);
+      ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,H-PAD.b);ctx.stroke();
+    }
+
+    ctx.fillStyle=t2; ctx.font='9px system-ui';
+    ctx.textAlign='right';
+    for(let i=0;i<=4;i++){
+      const v=yMax*(4-i)/4;
+      ctx.fillText(v<10?v.toFixed(1):v.toFixed(0), PAD.l-4, PAD.t+(i/4)*(H-PAD.t-PAD.b)+3);
+    }
+    ctx.textAlign='center';
+    for(let i=0;i<=4;i++)
+      ctx.fillText((xMax*i/4).toFixed(0), PAD.l+(i/4)*(W()-PAD.l-PAD.r), H-PAD.b+12);
+    ctx.textAlign='left'; ctx.font='9px system-ui';
+    ctx.fillText(yLbl, PAD.l, PAD.t-1);
+    ctx.textAlign='center';
+    ctx.fillText(xLbl, PAD.l+(W()-PAD.l-PAD.r)/2, H);
+
+    ctx.beginPath();
+    ctx.moveTo(...toCv(pts[0][0],pts[0][1]));
+    for(let i=1;i<pts.length;i++) ctx.lineTo(...toCv(pts[i][0],pts[i][1]));
+    ctx.lineTo(...toCv(pts[pts.length-1][0],0));
+    ctx.lineTo(...toCv(pts[0][0],0));
+    ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(...toCv(pts[0][0],pts[0][1]));
+    for(let i=1;i<pts.length;i++) ctx.lineTo(...toCv(pts[i][0],pts[i][1]));
+    ctx.strokeStyle=line; ctx.lineWidth=2; ctx.stroke();
+
+    for(let i=0;i<pts.length;i++){
+      const [cx,cy]=toCv(pts[i][0],pts[i][1]);
+      ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2);
+      ctx.fillStyle=(i===drag)?'#D85A30':dot;
+      ctx.fill();
+    }
+  }
+
+  function evXY(e){
+    const r=canvas.getBoundingClientRect();
+    const sx=canvas.width/r.width, sy=H/r.height;
+    const cl=e.touches?e.touches[0].clientX:e.clientX;
+    const ct=e.touches?e.touches[0].clientY:e.clientY;
+    return [(cl-r.left)*sx,(ct-r.top)*sy];
+  }
+  function nearest(cx,cy){
+    let best=-1,bd=18;
+    for(let i=0;i<pts.length;i++){
+      const [px,py]=toCv(pts[i][0],pts[i][1]);
+      const d=Math.hypot(cx-px,cy-py);
+      if(d<bd){bd=d;best=i;}
+    }
+    return best;
+  }
+  function move(e){
+    if(drag===null||drag<0) return;
+    e.preventDefault();
+    let [nx,ny]=fromCv(...evXY(e));
+    if(drag===0) nx=pts[0][0];
+    else if(drag===pts.length-1) nx=pts[pts.length-1][0];
+    else nx=Math.max(pts[drag-1][0]+0.5, Math.min(pts[drag+1][0]-0.5, nx));
+    if(drag===0) ny=0;
+    pts[drag]=[nx,ny];
+    draw(); onchange();
+  }
+
+  canvas.addEventListener('mousedown', e=>{e.preventDefault();drag=nearest(...evXY(e));if(drag>=0)draw();});
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup',   ()=>{drag=null;});
+  canvas.addEventListener('mouseleave',()=>{drag=null;});
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();drag=nearest(...evXY(e));if(drag>=0)draw();},{passive:false});
+  canvas.addEventListener('touchmove', move,{passive:false});
+  canvas.addEventListener('touchend',  ()=>{drag=null;});
+  window.addEventListener('resize',    ()=>draw());
+  draw();
+  return draw;
+}
+
+dmgRedraw = makeCurveEditor('cv-dmg', dmgPts, 'Temp (degC)',     '% GDP', 6,   20, update);
+macRedraw = makeCurveEditor('cv-mac', macPts, 'Abatement (%)', '% GDP', 100,  6, update);
+
+update();
+</script>
+</body>
+</html>
