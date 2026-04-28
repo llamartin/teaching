@@ -51,7 +51,32 @@ button.action.primary { background: #1e3a2f; color: #fff; border-color: #1e3a2f;
 button.action.primary:hover { background: #2d5a3d; }
 .score-line { font-size: 12px; color: #666; margin-top: .5rem; min-height: 1.4em; }
 
-/* ── Distributions ── */
+/* ── Barmah Choke panel ── */
+.zone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: .75rem; }
+.zone-card { border-radius: 8px; border: 1px solid #ddd; overflow: hidden; }
+.zone-header { padding: 8px 14px; font-size: 13px; font-weight: 500; color: #fff; display: flex; align-items: baseline; gap: 10px; }
+.zone-header.north { background: #5a1a0a; }
+.zone-header.south { background: #0a2a5a; }
+.zone-header span { font-size: 11px; font-weight: 400; opacity: .85; }
+.zone-badges { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 10px; background: #f9f7f4; border-bottom: 1px solid #eee; }
+.zone-badge { background: #fff; border: .5px solid #ddd; border-radius: 6px; padding: 5px 10px; }
+.zone-badge-label { font-size: 9px; color: #888; }
+.zone-badge-val { font-size: 14px; font-weight: 500; }
+.zone-chart { padding: 6px 8px 8px; }
+.zone-chart-wrap { position: relative; height: 240px; }
+.choke-note { background: #fff8e8; border: 1px solid #e0c060; border-radius: 6px; padding: 10px 13px; font-size: 12px; color: #555; margin-bottom: 1rem; line-height: 1.6; }
+.choke-note strong { color: #7a4a00; }
+.choke-gains { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 1rem; }
+.choke-gains th { background: #1e3a2f; color: #fff; padding: 5px 10px; font-weight: 400; font-size: 11px; }
+.choke-gains td { padding: 5px 10px; border-bottom: .5px solid #e0ddd8; text-align: right; }
+.choke-gains td:first-child { text-align: left; }
+.choke-gains th.north-col { background: #5a1a0a; color: #fff; }
+.choke-gains th.south-col { background: #0a2a5a; color: #fff; }
+.choke-gains th.total-col { background: #2a2a2a; color: #fff; }
+.choke-gains td.north-col { background: #f5e8e4; }
+.choke-gains td.south-col { background: #e4eaf5; }
+.choke-gains td.total-col { background: #f0ede8; }
+
 .chart-wrapper { position: relative; width: 100%; height: 340px; margin: .75rem 0; }
 .callout { background: #fff8e8; border: 1px solid #e0c060; border-radius: 6px; padding: 11px 13px; font-size: 12px; color: #555; margin-bottom: 1rem; line-height: 1.65; }
 .callout strong { color: #7a4a00; }
@@ -95,6 +120,7 @@ button.action.primary:hover { background: #2d5a3d; }
   <button class="tab-btn active" onclick="switchTab('farm',this)">1. My farm decisions</button>
   <button class="tab-btn" onclick="switchTab('diag',this)">2. $/ML distributions</button>
   <button class="tab-btn" onclick="switchTab('market',this)">3. Market</button>
+  <button class="tab-btn" onclick="switchTab('choke',this)">4. Barmah Choke</button>
 </nav>
 
 <!-- ══════════ PANEL 1: FARM ══════════ -->
@@ -192,6 +218,89 @@ button.action.primary:hover { background: #2d5a3d; }
       <tr><td>Value per ML ($/ML)</td><td id="bv">—</td><td id="tv">—</td><td id="cv">—</td></tr>
     </tbody>
   </table>
+</div>
+
+<!-- ══════════ PANEL 4: BARMAH CHOKE ══════════ -->
+<div class="panel" id="tab-choke">
+
+  <div class="choke-note">
+    <strong>The Barmah Choke</strong> (also called "The Narrows") is a narrow section of the Murray River that restricts water flow between the northern and southern basin. Rice and cotton farms sit primarily upstream in the north; citrus, grapes, and almonds are concentrated downstream in the south. When the choke binds, the two regions clear as separate markets — water cannot move south to meet demand there, creating a price wedge between zones.
+  </div>
+
+  <div class="water-inputs">
+    <label>Total available (ML): <input type="number" id="ctw" value="140000" min="2000" max="140000" step="1000" oninput="onChokeNum('total')"></label>
+    <label>Environmental reserve (ML): <input type="number" id="cew" value="0" min="0" max="70000" step="500" oninput="onChokeNum('env')"></label>
+    <span style="font-weight:500;color:#2a5a90;font-size:12px;">→ Farmers: <strong id="cfml">140,000</strong> ML</span>
+  </div>
+  <div class="alloc-bar-wrap" id="cabar">
+    <div class="bar-seg env"   id="cbenv"  style="width:0%"><span class="bar-lbl env-lbl" id="cbenv-l"></span></div>
+    <div class="bar-seg farm"  id="cbfarm" style="left:0%;width:100%"><span class="bar-lbl" id="cbfarm-l">Farmers 140,000 ML</span></div>
+    <div class="bar-seg empty" id="cbemp"  style="left:100%;width:0%"><span class="bar-lbl-muted" id="cbemp-l"></span></div>
+    <div class="dh" id="cdh-env" style="left:-7px;"></div>
+    <div class="dh" id="cdh-tot" style="left:calc(100% - 7px);"></div>
+  </div>
+  <div class="bar-scale">
+    <span>0</span><span>35,000</span><span>70,000</span><span>105,000</span><span>140,000 ML</span>
+  </div>
+
+  <div class="alloc-method-row">
+    <label style="white-space:nowrap;">Allocation method:
+      <select id="choke-method" onchange="updateChoke()" style="margin-left:6px;">
+        <option value="equal">Equal share (uniform)</option>
+        <option value="historical">Historical use</option>
+      </select>
+    </label>
+    <span id="choke-desc" style="font-size:11px;color:#666;white-space:nowrap;">Each farmer receives an equal share.</span>
+  </div>
+
+  <div class="section-label">Supply &amp; demand by zone — solid = annuals · dashed = perennials · click legend to show/hide</div>
+
+  <div class="zone-grid">
+    <div class="zone-card">
+      <div class="zone-header north">North zone <span>rice, cotton dominant</span></div>
+      <div class="zone-badges">
+        <div class="zone-badge"><div class="zone-badge-label">Eq. price</div><div class="zone-badge-val" id="n-price">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Traded</div><div class="zone-badge-val" id="n-traded">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Sellers</div><div class="zone-badge-val" id="n-sell">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Buyers</div><div class="zone-badge-val" id="n-buy">—</div></div>
+      </div>
+      <div class="zone-chart"><div class="zone-chart-wrap"><canvas id="northChart"></canvas></div></div>
+    </div>
+    <div class="zone-card">
+      <div class="zone-header south">South zone <span>citrus, grapes, almonds dominant</span></div>
+      <div class="zone-badges">
+        <div class="zone-badge"><div class="zone-badge-label">Eq. price</div><div class="zone-badge-val" id="s-price">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Traded</div><div class="zone-badge-val" id="s-traded">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Sellers</div><div class="zone-badge-val" id="s-sell">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Buyers</div><div class="zone-badge-val" id="s-buy">—</div></div>
+      </div>
+      <div class="zone-chart"><div class="zone-chart-wrap"><canvas id="southChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <table class="choke-gains">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th class="north-col">North — no trade</th><th class="north-col">North — with trade</th>
+        <th class="south-col">South — no trade</th><th class="south-col">South — with trade</th>
+        <th class="total-col">Total — no trade</th><th class="total-col">Total — with trade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Total production ($)</td>
+        <td class="north-col" id="cn-bp">—</td><td class="north-col" id="cn-tp">—</td>
+        <td class="south-col" id="cs-bp">—</td><td class="south-col" id="cs-tp">—</td>
+        <td class="total-col" id="ct-bp">—</td><td class="total-col" id="ct-tp">—</td>
+      </tr>
+      <tr><td>Value per ML ($/ML)</td>
+        <td class="north-col" id="cn-bv">—</td><td class="north-col" id="cn-tv">—</td>
+        <td class="south-col" id="cs-bv">—</td><td class="south-col" id="cs-tv">—</td>
+        <td class="total-col" id="ct-bv">—</td><td class="total-col" id="ct-tv">—</td>
+      </tr>
+    </tbody>
+  </table>
+
 </div>
 
 </div><!-- /page -->
@@ -341,15 +450,15 @@ function onNum(w) {
   else { EW=clamp(parseInt(document.getElementById('ew').value)||0,0,Math.floor(TW*.5)); }
   syncBar(); updateMarket();
 }
-function mkDrag(id, fn) {
-  const h = document.getElementById(id); let on=false;
+function mkDrag(barId, handleId, fn, onDone) {
+  const h = document.getElementById(handleId); let on=false;
   h.addEventListener('pointerdown', e => { on=true; h.setPointerCapture(e.pointerId); e.preventDefault(); });
-  h.addEventListener('pointermove', e => { if (!on) return; const r=document.getElementById('abar').getBoundingClientRect(); fn(clamp((e.clientX-r.left)/r.width,0,1)); syncBar(); });
-  h.addEventListener('pointerup',     () => { if (on) { on=false; updateMarket(); } });
+  h.addEventListener('pointermove', e => { if (!on) return; const r=document.getElementById(barId).getBoundingClientRect(); fn(clamp((e.clientX-r.left)/r.width,0,1)); });
+  h.addEventListener('pointerup',     () => { if (on) { on=false; if(onDone) onDone(); } });
   h.addEventListener('pointercancel', () => { on=false; });
 }
-mkDrag('dh-tot', f => { TW=Math.round(clamp(f*MAXW,MINW,MAXW)/1000)*1000; EW=clamp(EW,0,Math.floor(TW*.5)); });
-mkDrag('dh-env', f => { EW=Math.round(clamp(f*MAXW,0,Math.floor(TW*.5))/500)*500; });
+mkDrag('abar','dh-tot', f => { TW=Math.round(clamp(f*MAXW,MINW,MAXW)/1000)*1000; EW=clamp(EW,0,Math.floor(TW*.5)); syncBar(); }, updateMarket);
+mkDrag('abar','dh-env', f => { EW=Math.round(clamp(f*MAXW,0,Math.floor(TW*.5))/500)*500; syncBar(); }, updateMarket);
 syncBar();
 
 // ── Market compute ─────────────────────────────────────
@@ -383,17 +492,22 @@ function computeMarket(fml, method) {
   let trade=0, sell=0, buy=0;
   FARMERS.forEach((f,i) => {
     const full = f.mlPerHA * HAF;
-    const surplus  = al[i] - full;           // positive = oversupplied, negative = deficit
-    if (eqP >= f.thr || surplus > 0) {
-      // Sells: either price exceeds willingness-to-farm, or has surplus allocation
+    const surplus  = al[i] - full;
+    if (eqP >= f.thr) {
+      // Sells all water, exits farming — production = 0 for this farmer
       sell++;
-      trade += al[i] * eqP;
+    } else if (surplus > 0) {
+      // Oversupplied, price below threshold: farms at full capacity, sells surplus
+      sell++;
+      trade += full * f.rev;
     } else if (surplus < 0) {
-      // Has a deficit — buys if price is below threshold (already confirmed eqP < f.thr)
+      // Deficit: buys shortfall, farms at full capacity
       buy++;
-      trade += full * f.rev - Math.abs(surplus) * eqP;
+      trade += full * f.rev;
+    } else {
+      // Exactly matched: farms at full capacity
+      trade += full * f.rev;
     }
-    // surplus === 0 && eqP < f.thr: exactly matched, no trade
   });
   const supS = [...FARMERS.map((f,i) => ({...f,al:al[i]}))].sort((a,b) => a.thr-b.thr);
   const demS = [...FARMERS.map((f,i) => ({...f,al:al[i],def:Math.max(0,f.mlPerHA*HAF-al[i])}))].filter(f=>f.def>0).sort((a,b) => b.thr-a.thr);
@@ -519,7 +633,202 @@ function buildDiag() {
   });
 }
 
-// ── Tab switching ──────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  BARMAH CHOKE
+// ══════════════════════════════════════════════════════
+// Zone assignment: north = upstream (rice/cotton heavy), south = downstream (perennials heavy)
+// North fraction by crop: Rice 0.85, Cotton 0.80, Dairy 0.50, Grapes 0.15, Citrus 0.20, Almonds 0.10
+const NORTH_FRAC = { Rice:0.85, Cotton:0.80, Dairy:0.50, Grapes:0.15, Citrus:0.20, Almonds:0.10 };
+const rng2 = lcg(20240429); // separate seed so zone assignment is independent
+FARMERS.forEach(f => {
+  f.zone = rng2() < NORTH_FRAC[f.crop] ? 'north' : 'south';
+});
+const NORTH = FARMERS.filter(f => f.zone === 'north');
+const SOUTH = FARMERS.filter(f => f.zone === 'south');
+// North zone gets water proportionally to its farmers' weights (via getZoneAllocs)
+
+// Y_MAX is shared with market panel (already computed globally)
+
+let CTW = 140000, CEW = 0;
+
+function syncChokeBar() {
+  const fw=Math.max(0,CTW-CEW), tF=CTW/MAXW, eF=CEW/MAXW, fF=fw/MAXW;
+  const W = document.getElementById('cabar').offsetWidth || 700;
+  document.getElementById('cbenv').style.cssText  = `width:${(eF*100).toFixed(3)}%;`;
+  document.getElementById('cbfarm').style.cssText = `left:${(eF*100).toFixed(3)}%;width:${(fF*100).toFixed(3)}%;`;
+  document.getElementById('cbemp').style.cssText  = `left:${(tF*100).toFixed(3)}%;width:${((1-tF)*100).toFixed(3)}%;`;
+  document.getElementById('cdh-env').style.left   = (Math.round(eF*W)-7)+'px';
+  document.getElementById('cdh-tot').style.left   = (Math.round(tF*W)-7)+'px';
+  document.getElementById('cbenv-l').textContent  = CEW>0 ? `Env ${CEW.toLocaleString()} ML` : '';
+  document.getElementById('cbfarm-l').textContent = fw>3000 ? `Farmers ${fw.toLocaleString()} ML` : '';
+  document.getElementById('cbemp-l').textContent  = CTW<MAXW-3000 ? '← drag edge to add water' : '';
+  document.getElementById('ctw').value = CTW;
+  document.getElementById('cew').value = CEW;
+  document.getElementById('cfml').textContent = fw.toLocaleString();
+}
+function onChokeNum(w) {
+  if (w==='total') { CTW=clamp(parseInt(document.getElementById('ctw').value)||140000,MINW,MAXW); CEW=clamp(CEW,0,Math.floor(CTW*.5)); }
+  else { CEW=clamp(parseInt(document.getElementById('cew').value)||0,0,Math.floor(CTW*.5)); }
+  syncChokeBar(); updateChoke();
+}
+mkDrag('cabar','cdh-tot', f => { CTW=Math.round(clamp(f*MAXW,MINW,MAXW)/1000)*1000; CEW=clamp(CEW,0,Math.floor(CTW*.5)); syncChokeBar(); }, updateChoke);
+mkDrag('cabar','cdh-env', f => { CEW=Math.round(clamp(f*MAXW,0,Math.floor(CTW*.5))/500)*500; syncChokeBar(); }, updateChoke);
+syncChokeBar();
+
+function getZoneAllocs(zone, fml, method) {
+  // fml = total farmer water (same as market tab)
+  // zone determines who trades with whom, NOT how much water each farmer starts with
+  const farmers = zone === 'north' ? NORTH : SOUTH;
+  if (method === 'equal') {
+    // Every farmer gets fml/NF — identical to market tab, zone split is only about trading partners
+    return farmers.map(() => fml / NF);
+  }
+  // Historical: use HIST_WEIGHT across all farmers, allocate fml proportionally
+  // This gives north-heavy crops more water naturally without a hardcoded zone split
+  const allWeights = FARMERS.map(f => HIST_WEIGHT[f.crop] * (0.85 + f.hm/1.4*0.3));
+  const sumAllW = allWeights.reduce((s,w) => s+w, 0);
+  // Return just this zone's farmers' allocations (each gets their share of the global fml)
+  return farmers.map(f => {
+    const w = HIST_WEIGHT[f.crop] * (0.85 + f.hm/1.4*0.3);
+    return (w / sumAllW) * fml;
+  });
+}
+
+function computeZone(zone, fml, method) {
+  const farmers = zone === 'north' ? NORTH : SOUTH;
+  const al = getZoneAllocs(zone, fml, method);
+  let base = 0;
+  farmers.forEach((f,i) => base += Math.min(al[i], f.mlPerHA*HAF) * f.rev);
+  const pg = Array.from({length:401}, (_,i) => i*5);
+  let eqP=0, eqQ=0, ps=-1, pd=1e12;
+  for (const p of pg) {
+    const sup = farmers.reduce((s,f,i) => p>=f.thr ? s+al[i] : s, 0);
+    const dem = farmers.reduce((s,f,i) => p<f.thr  ? s+Math.max(0,f.mlPerHA*HAF-al[i]) : s, 0);
+    if (sup>=dem && ps<pd) { eqP=p; eqQ=(sup+dem)/2; break; }
+    ps=sup; pd=dem;
+  }
+  let trade=0, sell=0, buy=0;
+  farmers.forEach((f,i) => {
+    const full=f.mlPerHA*HAF, surplus=al[i]-full;
+    if (eqP>=f.thr) {
+      sell++;  // exits farming, production = 0
+    } else if (surplus>0) {
+      sell++; trade+=full*f.rev;  // farms at capacity, sells surplus
+    } else if (surplus<0) {
+      buy++; trade+=full*f.rev;   // buys deficit, farms at capacity
+    } else {
+      trade+=full*f.rev;          // exactly matched
+    }
+  });
+  const supS=[...farmers.map((f,i)=>({...f,al:al[i]}))].sort((a,b)=>a.thr-b.thr);
+  const demS=[...farmers.map((f,i)=>({...f,al:al[i],def:Math.max(0,f.mlPerHA*HAF-al[i])}))].filter(f=>f.def>0).sort((a,b)=>b.thr-a.thr);
+  const sb={}, db={};
+  CT.forEach(ct=>{sb[ct.name]=[];db[ct.name]=[];});
+  let cs=0; supS.forEach(f=>{sb[f.crop].push({x:cs,y:f.thr});cs+=f.al;sb[f.crop].push({x:cs,y:f.thr});});
+  let cd=0; demS.forEach(f=>{db[f.crop].push({x:cd,y:f.thr});cd+=f.def;db[f.crop].push({x:cd,y:f.thr});});
+  // zoneFml = water actually allocated to this zone's farmers (for $/ML calculation)
+  const zoneFml = al.reduce((s,a) => s+a, 0);
+  return { eqP, eqQ:Math.round(eqQ), sell, buy,
+           base:Math.round(base), trade:Math.round(trade), zoneFml, sb, db };
+}
+
+let hiddenCropsChoke = new Set(), NC_chart=null, SC_chart=null;
+
+function buildZoneChart(canvasId, r, existingChart, zone) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (existingChart) existingChart.destroy();
+  const sDs = CT.map(ct => ({
+    label: ct.name,
+    data: r.sb[ct.name],
+    borderColor: ct.color, backgroundColor:'transparent',
+    showLine:true, pointRadius:0,
+    borderWidth: ct.annual ? 2.5 : 2,
+    borderDash: ct.annual ? [] : [7,4],
+    tension:0, hidden: hiddenCropsChoke.has(ct.name),
+  }));
+  const dDs = CT.map(ct => ({
+    label: ct.name+' (D)',
+    data: r.db[ct.name],
+    borderColor: ct.color, backgroundColor:'transparent',
+    showLine:true, pointRadius:0, borderWidth:1.5,
+    borderDash:[2,3], tension:0, hidden: hiddenCropsChoke.has(ct.name),
+  }));
+  const eqD = { label:'', data:[{x:r.eqQ,y:r.eqP}], borderColor:'#cc3333', backgroundColor:'#cc3333', pointRadius:6, showLine:false, hidden:false };
+  const chart = new Chart(ctx, {
+    type:'scatter',
+    data:{ datasets:[...sDs,...dDs,eqD] },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:150},
+      plugins:{
+        legend:{
+          display:true, position:'top',
+          labels:{ font:{size:10}, boxWidth:14, filter:item=>item.datasetIndex<CT.length },
+          onClick:(e,legendItem,legend) => {
+            const idx=legendItem.datasetIndex, name=CT[idx].name;
+            if (hiddenCropsChoke.has(name)) hiddenCropsChoke.delete(name); else hiddenCropsChoke.add(name);
+            // update both zone charts simultaneously
+            [NC_chart, SC_chart].forEach(ch => {
+              if (!ch) return;
+              ch.data.datasets[idx].hidden = hiddenCropsChoke.has(name);
+              ch.data.datasets[idx+CT.length].hidden = hiddenCropsChoke.has(name);
+              ch.update('none');
+            });
+          }
+        },
+        tooltip:{ callbacks:{ label:c=>c.raw?`${c.dataset.label||''}: Q=${Math.round(c.raw.x).toLocaleString()} ML, P=$${c.raw.y}/ML`:'' } }
+      },
+      scales:{
+        x:{ title:{display:true,text:'Cumulative water (ML)',font:{size:10}}, ticks:{font:{size:9},stepSize:5000}, min:0, max:35000 },
+        y:{ title:{display:true,text:'Effective threshold ($/ML)',font:{size:10}}, ticks:{font:{size:9},callback:v=>'$'+v}, min:0, max:Y_MAX }
+      }
+    }
+  });
+  return chart;
+}
+
+function updateChoke() {
+  const fml = Math.max(0, CTW-CEW);
+  const method = document.getElementById('choke-method').value;
+  document.getElementById('choke-desc').textContent = method==='equal' ? 'Each farmer receives an equal share.' : 'Farmers in the north receive disproportionately large allocations.';
+  if (fml < 500) {
+    ['n-price','n-traded','n-sell','n-buy','s-price','s-traded','s-sell','s-buy'].forEach(id=>document.getElementById(id).textContent='—');
+    return;
+  }
+  const rN = computeZone('north', fml, method);
+  const rS = computeZone('south', fml, method);
+
+  document.getElementById('n-price').textContent  = '$'+rN.eqP+'/ML';
+  document.getElementById('n-traded').textContent = rN.eqQ.toLocaleString()+' ML';
+  document.getElementById('n-sell').textContent   = rN.sell;
+  document.getElementById('n-buy').textContent    = rN.buy;
+  document.getElementById('s-price').textContent  = '$'+rS.eqP+'/ML';
+  document.getElementById('s-traded').textContent = rS.eqQ.toLocaleString()+' ML';
+  document.getElementById('s-sell').textContent   = rS.sell;
+  document.getElementById('s-buy').textContent    = rS.buy;
+
+  const pctN = ((rN.trade-rN.base)/rN.base*100).toFixed(1);
+  const pctS = ((rS.trade-rS.base)/rS.base*100).toFixed(1);
+  const totalBase  = rN.base  + rS.base;
+  const totalTrade = rN.trade + rS.trade;
+  const pctT = ((totalTrade-totalBase)/totalBase*100).toFixed(1);
+  document.getElementById('cn-bp').textContent = '$'+rN.base.toLocaleString();
+  document.getElementById('cn-tp').textContent = '$'+rN.trade.toLocaleString()+` (+${pctN}%)`;
+  document.getElementById('cs-bp').textContent = '$'+rS.base.toLocaleString();
+  document.getElementById('cs-tp').textContent = '$'+rS.trade.toLocaleString()+` (+${pctS}%)`;
+  document.getElementById('ct-bp').textContent = '$'+totalBase.toLocaleString();
+  document.getElementById('ct-tp').textContent = '$'+totalTrade.toLocaleString()+` (+${pctT}%)`;
+  document.getElementById('cn-bv').textContent = '$'+Math.round(rN.base/rN.zoneFml);
+  document.getElementById('cn-tv').textContent = '$'+Math.round(rN.trade/rN.zoneFml);
+  document.getElementById('cs-bv').textContent = '$'+Math.round(rS.base/rS.zoneFml);
+  document.getElementById('cs-tv').textContent = '$'+Math.round(rS.trade/rS.zoneFml);
+  document.getElementById('ct-bv').textContent = '$'+Math.round(totalBase/fml);
+  document.getElementById('ct-tv').textContent = '$'+Math.round(totalTrade/fml);
+
+  NC_chart = buildZoneChart('northChart', rN, NC_chart, 'north');
+  SC_chart = buildZoneChart('southChart', rS, SC_chart, 'south');
+}
+
+
 function switchTab(name, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -527,6 +836,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   if (name==='market') { syncBar(); updateMarket(); }
   if (name==='diag')   buildDiag();
+  if (name==='choke')  { syncChokeBar(); updateChoke(); }
 }
 </script>
 </body>
