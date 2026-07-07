@@ -8,7 +8,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Georgia, serif; background: #faf8f4; color: #222; }
-.page { max-width: 1060px; margin: 0 auto; padding: 2rem 1.5rem; }
+.page { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem; }
 h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; color: #1e3a2f; }
 .subtitle { font-size: 13px; color: #888; margin-bottom: 2rem; }
 .tab-nav { display: flex; border-bottom: 2px solid #1e3a2f; margin-bottom: 1.75rem; }
@@ -109,29 +109,6 @@ button.action.primary:hover { background: #2d5a3d; }
 .comparison-table th { background: #1e3a2f; color: #fff; padding: 6px 10px; font-weight: 400; font-size: 11px; }
 .comparison-table td { padding: 6px 10px; border-bottom: .5px solid #e0ddd8; text-align: right; }
 .comparison-table td:first-child { text-align: left; }
-
-/* ── Farmer roster ── */
-.roster-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 1.1rem; font-size: 12px; color: #1e3a2f; font-weight: 500; user-select: none; padding: 6px 0; border-top: 1px solid #ddd; }
-.roster-toggle:hover { color: #2d5a3d; }
-.roster-caret { font-size: 10px; transition: transform 0.2s; display: inline-block; }
-.roster-caret.open { transform: rotate(90deg); }
-.roster-panel { display: none; margin-top: .6rem; }
-.roster-panel.open { display: block; }
-.roster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 12px; }
-@media (max-width: 680px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
-.roster-col-head { display: grid; grid-template-columns: 2fr 1.4fr 1.6fr 1.6fr; gap: 0 4px; font-size: 9px; color: #888; font-weight: 500; padding: 2px 4px 3px; border-bottom: 1px solid #ddd; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .03em; }
-.roster-row { display: grid; grid-template-columns: 2fr 1.4fr 1.6fr 1.6fr; gap: 0 4px; font-size: 10px; padding: 1.5px 4px; border-radius: 3px; }
-.roster-row:hover { background: #f5f0e8; }
-.roster-row .r-name { color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.roster-row .r-crop { color: #666; font-size: 9px; }
-.roster-row .r-price { color: #555; }
-.roster-row .r-action.sell { color: #8b4500; font-weight: 600; }
-.roster-row .r-action.buy  { color: #1a5c1a; font-weight: 600; }
-.roster-row .r-action.hold { color: #555; }
-.roster-row .r-earn { text-align: right; }
-.roster-row .r-earn.pos { color: #1a5c1a; }
-.roster-row .r-earn.neg { color: #cc4400; }
-.roster-section-head { font-size: 10px; font-weight: 600; color: #fff; padding: 2px 5px; border-radius: 3px; margin: 5px 0 3px; grid-column: 1/-1; }
 </style>
 </head>
 <body>
@@ -144,15 +121,14 @@ button.action.primary:hover { background: #2d5a3d; }
   <button class="tab-btn" onclick="switchTab('diag',this)">2. $/ML distributions</button>
   <button class="tab-btn" onclick="switchTab('market',this)">3. Market</button>
   <button class="tab-btn" onclick="switchTab('choke',this)">4. Barmah Choke</button>
-  <button class="tab-btn" onclick="switchTab('buyback',this)">5. Buybacks</button>
 </nav>
 
 <!-- ══════════ PANEL 1: FARM ══════════ -->
 <div class="panel active" id="tab-farm">
-  <p class="farm-intro">Below are 8 farmers, each with <strong>1 HA</strong> and an allocation of <strong>4 ML</strong>. At each water price, each farmer decides: <span style="background:#e8f0e8;color:#1a5c1a;padding:1px 6px;border-radius:3px;font-size:11px;">irrigate</span> (buy the shortfall if needed) or <span style="background:#fff3e0;color:#8b4500;padding:1px 6px;border-radius:3px;font-size:11px;">sell</span> their 4 ML. Click each cell to toggle.</p>
+  <p class="farm-intro">You have <strong>1 HA</strong> of each crop and a water allocation of <strong>4 ML per HA</strong> (32 ML total). For each crop at each water price, click the cell to toggle <span style="background:#e8f0e8;color:#1a5c1a;padding:1px 6px;border-radius:3px;font-size:11px;">irrigate</span> or <span style="background:#fff3e0;color:#8b4500;padding:1px 6px;border-radius:3px;font-size:11px;">sell</span>.</p>
   <div class="legend">
-    <span><span class="leg-sw" style="background:#e8f0e8;border:1px solid #7aab7a;"></span>Irrigate (buy shortfall)</span>
-    <span><span class="leg-sw" style="background:#fff3e0;border:1px solid #e0a060;"></span>Sell 4 ML</span>
+    <span><span class="leg-sw" style="background:#e8f0e8;border:1px solid #7aab7a;"></span>Irrigate</span>
+    <span><span class="leg-sw" style="background:#fff3e0;border:1px solid #e0a060;"></span>Sell allocation</span>
     <span><span class="leg-sw" style="background:#f0ede8;border:1px solid #ccc;"></span>Not filled in</span>
     <span><span class="leg-sw" style="background:#dde4ef;border:1px solid #8a9abf;"></span>$/ML = revenue ÷ water use</span>
   </div>
@@ -165,14 +141,13 @@ button.action.primary:hover { background: #2d5a3d; }
         <th class="col-dairy">Dairy</th>
         <th colspan="2" class="col-citrus">Citrus</th>
         <th class="col-almonds">Almonds</th>
-        <th colspan="2" style="background:#1e3a2f;"></th>
+        <th colspan="3" style="background:#1e3a2f;"></th>
       </tr>
       <tr>
         <th class="left">Price $/ML</th>
         <th>Low</th><th>High</th><th>Low</th><th>High</th><th></th>
         <th>Low</th><th>High</th><th></th>
-        <th style="border-left:3px solid #8b4500;color:#8b4500;background:#fff7f0;">ML<br>for sale</th>
-        <th style="border-left:1px solid #ccc;color:#1a5c1a;background:#f0f8f0;">ML<br>to buy</th>
+        <th>ML<br>needed</th><th>ML buy(+)<br>sell(−)</th><th>Total<br>profit $</th>
       </tr>
     </thead>
     <tbody id="farm-tbody"></tbody>
@@ -183,6 +158,7 @@ button.action.primary:hover { background: #2d5a3d; }
     <button class="action" onclick="resetTable()">Reset</button>
   </div>
   <div class="score-line" id="score-line"></div>
+  <p style="font-size:11px;color:#888;margin-top:.75rem;">Profit = crop revenue − cost of extra water bought + revenue from surplus water sold at the market price.</p>
 </div>
 
 <!-- ══════════ PANEL 2: DISTRIBUTIONS ══════════ -->
@@ -201,7 +177,7 @@ button.action.primary:hover { background: #2d5a3d; }
   <div class="water-inputs">
     <label>Total available (ML): <input type="number" id="tw" value="140000" min="2000" max="140000" step="1000" oninput="onNum('total')"></label>
     <label>Environmental reserve (ML): <input type="number" id="ew" value="0" min="0" max="70000" step="500" oninput="onNum('env')"></label>
-    <span style="font-weight:500;color:#2a5a90;font-size:12px;">→ Farmers: <strong id="fml">4.0</strong> ML/HA each</span>
+    <span style="font-weight:500;color:#2a5a90;font-size:12px;">→ Farmers: <strong id="fml">140,000</strong> ML</span>
   </div>
   <div class="alloc-bar-wrap" id="abar">
     <div class="bar-seg env"   id="benv"  style="width:0%"><span class="bar-lbl env-lbl" id="benv-l"></span></div>
@@ -242,15 +218,6 @@ button.action.primary:hover { background: #2d5a3d; }
       <tr><td>Value per ML ($/ML)</td><td id="bv">—</td><td id="tv">—</td><td id="cv">—</td></tr>
     </tbody>
   </table>
-
-  <!-- ── Farmer roster (collapsible) ── -->
-  <div class="roster-toggle" onclick="toggleRoster(this)">
-    <span class="roster-caret">▶</span>
-    All farmers — live market positions
-  </div>
-  <div class="roster-panel" id="farmer-roster-panel">
-    <div id="farmer-roster-content"></div>
-  </div>
 </div>
 
 <!-- ══════════ PANEL 4: BARMAH CHOKE ══════════ -->
@@ -336,72 +303,6 @@ button.action.primary:hover { background: #2d5a3d; }
 
 </div>
 
-<!-- ══════════ PANEL 5: BUYBACKS ══════════ -->
-<div class="panel" id="tab-buyback">
-
-  <div class="choke-note" style="border-left-color:#2a7a8a;">
-    <strong>Seasonal water buybacks.</strong> Instead of reserving water upfront, the government enters the market as a buyer — competing with farmers for water at the prevailing price. Willing sellers receive the market price; the water they sell is retired for environmental use that season. This contrasts with a mandated reserve, where farmers receive no compensation.
-  </div>
-
-  <div class="water-inputs">
-    <label>Total available (ML): <input type="number" id="bb-tw" value="140000" min="2000" max="140000" step="1000" oninput="onBBNum('total')"></label>
-    <label>Govt buyback target (ML): <input type="number" id="bb-bw" value="0" min="0" max="70000" step="500" oninput="onBBNum('buy')"></label>
-    <span style="font-weight:500;color:#2a5a90;font-size:12px;">→ Farmers: <strong id="bb-fml">4.0</strong> ML/HA each</span>
-  </div>
-  <div class="alloc-bar-wrap" id="bb-abar">
-    <div class="bar-seg farm"  id="bb-bfarm" style="left:0%;width:100%"><span class="bar-lbl" id="bb-bfarm-l">Farmers 140,000 ML</span></div>
-    <div class="bar-seg env"   id="bb-bbuy"  style="width:0%;background:#2a7a8a;"><span class="bar-lbl env-lbl" id="bb-bbuy-l"></span></div>
-    <div class="bar-seg empty" id="bb-bemp"  style="left:100%;width:0%"><span class="bar-lbl-muted" id="bb-bemp-l"></span></div>
-    <div class="dh" id="bb-dh-buy" style="left:-7px;"></div>
-    <div class="dh" id="bb-dh-tot" style="left:calc(100% - 7px);"></div>
-  </div>
-  <div class="bar-scale">
-    <span>0</span><span>35,000</span><span>70,000</span><span>105,000</span><span>140,000 ML</span>
-  </div>
-
-  <div class="alloc-method-row">
-    <label style="white-space:nowrap;">Allocation method:
-      <select id="bb-method" onchange="updateBuyback()" style="margin-left:6px;">
-        <option value="equal">Equal share (uniform)</option>
-        <option value="historical">Historical use</option>
-      </select>
-    </label>
-    <span id="bb-alloc-desc" style="font-size:11px;color:#666;white-space:nowrap;">Each farmer receives an equal share.</span>
-  </div>
-
-  <div class="eq-badges">
-    <div class="eq-badge"><div class="eq-badge-label">Market price</div><div class="eq-badge-val" id="bb-eq-price">—</div></div>
-    <div class="eq-badge"><div class="eq-badge-label">Farmer-to-farmer</div><div class="eq-badge-val" id="bb-f2f">—</div></div>
-    <div class="eq-badge"><div class="eq-badge-label">Govt buyback</div><div class="eq-badge-val" id="bb-qty">—</div></div>
-    <div class="eq-badge"><div class="eq-badge-label">Govt cost</div><div class="eq-badge-val" id="bb-cost" style="color:#2a7a8a;">—</div></div>
-    <div class="eq-badge"><div class="eq-badge-label">Sellers</div><div class="eq-badge-val" id="bb-sellers">—</div></div>
-    <div class="eq-badge"><div class="eq-badge-label">Buyers</div><div class="eq-badge-val" id="bb-buyers">—</div></div>
-  </div>
-
-  <div class="section-label">Supply &amp; demand — dashed = farmer demand only · solid = total demand (farmer + govt) · equilibrium where supply meets total demand</div>
-  <div class="mkt-chart-wrapper"><canvas id="bbChart"></canvas></div>
-
-  <table class="comparison-table">
-    <thead><tr><th>Metric</th><th>No policy (baseline)</th><th>Mandate (same env. water)</th><th>Buyback</th></tr></thead>
-    <tbody>
-      <tr><td>Farmer income ($)</td><td id="bb-base-inc">—</td><td id="bb-mand-inc">—</td><td id="bb-bb-inc">—</td></tr>
-      <tr><td>Govt cost ($)</td><td id="bb-base-cost">$0</td><td id="bb-mand-cost">$0</td><td id="bb-bb-cost">—</td></tr>
-      <tr><td>Env. water secured (ML)</td><td id="bb-base-env">0</td><td id="bb-mand-env">—</td><td id="bb-bb-env">—</td></tr>
-      <tr><td>Market price ($/ML)</td><td id="bb-base-v">—</td><td id="bb-mand-v">—</td><td id="bb-bb-v">—</td></tr>
-    </tbody>
-  </table>
-
-  <!-- ── Farmer roster (collapsible) ── -->
-  <div class="roster-toggle" onclick="toggleBBRoster(this)">
-    <span class="roster-caret">▶</span>
-    All farmers — live buyback positions
-  </div>
-  <div class="roster-panel" id="bb-roster-panel">
-    <div id="bb-roster-content"></div>
-  </div>
-
-</div>
-
 </div><!-- /page -->
 <script>
 // ══════════════════════════════════════════════════════
@@ -442,18 +343,20 @@ function renderTable() {
   mL.forEach((l, mi) => {
     h += `<tr class="meta-row"><td class="left">${l}</td>`;
     CROPS.forEach((_, ci) => h += `<td class="${mi===2?'dpm':''}">${mV[mi][ci]}</td>`);
-    h += `<td style="border-left:3px solid #8b4500;">—</td><td>—</td></tr>`;
+    h += `<td>—</td><td>—</td><td>—</td></tr>`;
   });
   PRICES.forEach((price, pi) => {
-    let mlSell = 0, mlBuy = 0, anyBlank = false;
+    let mlN = 0, tot = 0, anyBlank = false;
     CROPS.forEach((c, ci) => {
+      // use correct answer for blank cells when revealed, otherwise treat as missing
       const a = answers[pi][ci];
       const effective = (a === null && revealed) ? correct(ci, pi) : a;
       if (effective === null) { anyBlank = true; return; }
-      if (effective) mlBuy += Math.max(0, c.mlPerHA - ALLOC);  // shortfall to buy
-      else mlSell += ALLOC;                                      // sells full allocation
+      if (effective) { mlN += c.mlPerHA; tot += pIrr(c, price); }
+      else tot += pSell(price);
     });
     const full = !anyBlank;
+    const bs = mlN - NC * ALLOC;
     h += `<tr><td class="price-col">$${price}</td>`;
     CROPS.forEach((_, ci) => {
       const a = answers[pi][ci]; let cls, lbl;
@@ -463,9 +366,9 @@ function renderTable() {
       else { cls='sell'; lbl='sell'; }
       h += `<td><span class="dcell ${cls}" onclick="toggle(${pi},${ci})">${lbl}</span></td>`;
     });
-    h += `<td class="neg" style="border-left:3px solid #8b4500;">${full ? mlSell : '—'}</td>`;
-    h += `<td class="pos">${full ? mlBuy : '—'}</td>`;
-    h += `</tr>`;
+    h += `<td class="fixed">${full?mlN:'—'}</td>`;
+    h += `<td class="${bs<0?'neg':bs>0?'pos':''}">${full?(bs>0?'+':'')+bs:'—'}</td>`;
+    h += `<td class="fixed">${full?'$'+Math.round(tot).toLocaleString():'—'}</td></tr>`;
   });
   document.getElementById('farm-tbody').innerHTML = h;
 }
@@ -540,7 +443,7 @@ function syncBar() {
   document.getElementById('bemp-l').textContent  = TW<MAXW-3000 ? '← drag edge to add water' : '';
   document.getElementById('tw').value = TW;
   document.getElementById('ew').value = EW;
-  document.getElementById('fml').textContent = (fw/NF/HAF).toFixed(1);
+  document.getElementById('fml').textContent = fw.toLocaleString();
 }
 function onNum(w) {
   if (w==='total') { TW=clamp(parseInt(document.getElementById('tw').value)||140000,MINW,MAXW); EW=clamp(EW,0,Math.floor(TW*.5)); }
@@ -608,103 +511,68 @@ function computeMarket(fml, method) {
   });
   const supS = [...FARMERS.map((f,i) => ({...f,al:al[i]}))].sort((a,b) => a.thr-b.thr);
   const demS = [...FARMERS.map((f,i) => ({...f,al:al[i],def:Math.max(0,f.mlPerHA*HAF-al[i])}))].filter(f=>f.def>0).sort((a,b) => b.thr-a.thr);
-  // Flat step arrays — each entry is one horizontal segment {x0,x1,y,crop}
-  const sSteps=[], dSteps=[];
-  let cs=0; supS.forEach(f => { sSteps.push({x0:cs,x1:cs+f.al,y:f.thr,crop:f.crop}); cs+=f.al; });
-  let cd=0; demS.forEach(f => { dSteps.push({x0:cd,x1:cd+f.def,y:f.thr,crop:f.crop}); cd+=f.def; });
+  const sb={}, db={};
+  CT.forEach(ct => { sb[ct.name]=[]; db[ct.name]=[]; });
+  let cs=0; supS.forEach(f => { sb[f.crop].push({x:cs,y:f.thr}); cs+=f.al; sb[f.crop].push({x:cs,y:f.thr}); });
+  let cd=0; demS.forEach(f => { db[f.crop].push({x:cd,y:f.thr}); cd+=f.def; db[f.crop].push({x:cd,y:f.thr}); });
   return { eqP, eqQ:Math.round(eqQ), sell, buy,
            base:Math.round(base), trade:Math.round(trade),
-           sSteps, dSteps, xMax:Math.max(cs,cd)*1.05,
-           oversupplied: CT.filter(ct => !dSteps.some(s=>s.crop===ct.name)).map(ct=>ct.name) };
+           sb, db, xMax:Math.max(cs,cd)*1.05,
+           oversupplied: CT.filter(ct => db[ct.name].length===0).map(ct=>ct.name) };
 }
 
 let hiddenCrops = new Set(), MC = null;
-let hiddenCropsBB = new Set(), BB_MC = null;
 
 function buildChart(r) {
   const ctx = document.getElementById('mktChart').getContext('2d');
   if (MC) MC.destroy();
-
-  // Legend-only datasets (one invisible point each to drive scale + legend)
-  const legendDs = CT.map(ct => ({
+  const sDs = CT.map(ct => ({
     label: ct.name,
-    data: [{x:0, y:1}, {x:r.xMax, y:Y_MAX}],
+    data: r.sb[ct.name],
     borderColor: ct.color, backgroundColor:'transparent',
-    showLine:false, pointRadius:0,
+    showLine:true, pointRadius:0,
     borderWidth: ct.annual ? 2.5 : 2,
     borderDash: ct.annual ? [] : [7,4],
-    hidden: hiddenCrops.has(ct.name),
+    tension:0, hidden: hiddenCrops.has(ct.name),
   }));
-  const eqDs = [{
+  const dDs = CT.map(ct => ({
+    label: ct.name+' (D)',
+    data: r.db[ct.name],
+    borderColor: ct.color, backgroundColor:'transparent',
+    showLine:true, pointRadius:0, borderWidth:1.5,
+    borderDash:[2,3], tension:0, hidden: hiddenCrops.has(ct.name),
+  }));
+  const eqD = {
     label:'', data:[{x:r.eqQ, y:r.eqP}],
     borderColor:'#cc3333', backgroundColor:'#cc3333',
-    pointRadius:8, showLine:false,
-  }];
-
-  const plugin = {
-    id:'stepsPlugin',
-    afterDraw(chart) {
-      const c=chart.ctx, xs=chart.scales.x, ys=chart.scales.y;
-      if (!xs||!ys) return;
-      c.save();
-      const {left,top,right,bottom}=chart.chartArea;
-      c.beginPath(); c.rect(left,top,right-left,bottom-top); c.clip();
-      r.sSteps.forEach(s => {
-        if (hiddenCrops.has(s.crop)) return;
-        const ct=CT.find(t=>t.name===s.crop);
-        c.beginPath(); c.strokeStyle=ct.color; c.lineWidth=ct.annual?2.5:2;
-        c.setLineDash(ct.annual?[]:[7,4]);
-        c.moveTo(xs.getPixelForValue(s.x0), ys.getPixelForValue(s.y));
-        c.lineTo(xs.getPixelForValue(s.x1), ys.getPixelForValue(s.y));
-        c.stroke();
-      });
-      r.dSteps.forEach(s => {
-        if (hiddenCrops.has(s.crop)) return;
-        const ct=CT.find(t=>t.name===s.crop);
-        c.beginPath(); c.strokeStyle=ct.color; c.lineWidth=1.5;
-        c.setLineDash([3,3]);
-        c.moveTo(xs.getPixelForValue(s.x0), ys.getPixelForValue(s.y));
-        c.lineTo(xs.getPixelForValue(s.x1), ys.getPixelForValue(s.y));
-        c.stroke();
-      });
-      c.setLineDash([]); c.restore();
-    }
+    pointRadius:8, showLine:false, hidden:false,
   };
-
   MC = new Chart(ctx, {
     type:'scatter',
-    data:{ datasets:[...legendDs,...eqDs] },
+    data:{ datasets:[...sDs,...dDs,eqD] },
     options:{
       responsive:true, maintainAspectRatio:false, animation:{duration:150},
       plugins:{
         legend:{
           display:true, position:'top',
-          labels:{ font:{size:11}, boxWidth:20, filter:item=>item.datasetIndex<CT.length,
-            generateLabels(chart) {
-              return CT.map((ct,i) => ({
-                text:ct.name, datasetIndex:i,
-                fillStyle:'transparent', strokeStyle:ct.color,
-                lineWidth:ct.annual?2.5:2,
-                lineDash:ct.annual?[]:[7,4],
-                hidden:hiddenCrops.has(ct.name),
-              }));
-            }
-          },
-          onClick:(e,legendItem) => {
-            const name=legendItem.text;
+          labels:{ font:{size:11}, boxWidth:20, filter:item=>item.datasetIndex<CT.length },
+          onClick:(e,legendItem,legend) => {
+            const idx = legendItem.datasetIndex;
+            const name = CT[idx].name;
             if (hiddenCrops.has(name)) hiddenCrops.delete(name); else hiddenCrops.add(name);
-            MC.data.datasets[legendItem.datasetIndex].hidden=hiddenCrops.has(name);
-            MC.update('none');
+            const chart = legend.chart;
+            chart.data.datasets[idx].hidden = hiddenCrops.has(name);
+            chart.data.datasets[idx+CT.length].hidden = hiddenCrops.has(name);
+            chart.update('none');
           }
         },
-        tooltip:{ callbacks:{ label:c=>c.raw?`Q=${Math.round(c.raw.x).toLocaleString()} ML, P=$${c.raw.y}/ML`:'' } }
+        tooltip:{ callbacks:{ label:c => c.raw ? `${c.dataset.label||''}: Q=${Math.round(c.raw.x).toLocaleString()} ML, P=$${c.raw.y}/ML` : '' } }
       },
       scales:{
-        x:{ title:{display:true,text:'Cumulative water (ML)',font:{size:11}}, ticks:{font:{size:10},stepSize:10000}, min:0, max:70000 },
+        x:{ title:{display:true,text:'Cumulative water (ML)',font:{size:11}}, ticks:{font:{size:10}, stepSize:10000}, min:0, max:70000 },
         y:{ title:{display:true,text:'Effective threshold ($/ML)',font:{size:11}}, ticks:{font:{size:10},callback:v=>'$'+v}, min:0, max:Y_MAX }
       }
-    },
-    plugins:[plugin]
+    }
   });
 }
 
@@ -726,110 +594,6 @@ function updateMarket() {
   document.getElementById('tv').textContent = '$'+Math.round(r.trade/fml);
   document.getElementById('cv').textContent = (pct>0?'+':'')+pct+'%';
   buildChart(r);
-  renderFarmerRoster(r.eqP, fml, method);
-}
-
-// ── Farmer roster ──────────────────────────────────────
-function toggleRoster(toggleEl) {
-  const caret = toggleEl.querySelector('.roster-caret');
-  const panel = document.getElementById('farmer-roster-panel');
-  const open = panel.classList.toggle('open');
-  caret.classList.toggle('open', open);
-  if (open) {
-    const fml = Math.max(0, TW - EW);
-    const method = document.getElementById('alloc-method').value;
-    const r = computeMarket(fml, method);
-    renderFarmerRoster(r.eqP, fml, method);
-  }
-}
-
-const FARMER_NAMES = (() => {
-  const first = ['Alex','Blake','Casey','Dana','Ellis','Fran','Glen','Harper','Indira','Jules',
-                 'Kim','Lee','Morgan','Nadia','Owen','Pat','Quinn','Raj','Sam','Tara',
-                 'Uma','Val','Wei','Xan','Yara','Zoe','Beau','Cleo','Drew','Erin',
-                 'Finn','Gabi','Hiro','Iris','Jace','Kira','Luca','Mara','Neil','Opal',
-                 'Prue','Reed','Skye','Toby','Una','Vance','Wren','Xiu','Yael','Zara'];
-  const last  = ['Anderson','Baker','Chen','Davis','Evans','Foster','Garcia','Hill','Ito','Jones',
-                 'Kim','Lee','Martin','Nguyen','Okafor','Patel','Quinn','Russo','Singh','Taylor',
-                 'Ueda','Vargas','Walsh','Xu','Yamamoto','Zhu','Abbott','Bauer','Costa','Dunn',
-                 'Ellis','Flynn','Gomez','Hayes','Ibrahim','Johal','Kang','Lam','Moss','Nash',
-                 'Ortega','Park','Reyes','Stone','Tran','Upton','Voss','Wong','Yuen','Zhang'];
-  const rn = lcg(20240430);
-  return FARMERS.map(() => first[Math.floor(rn()*first.length)] + ' ' + last[Math.floor(rn()*last.length)]);
-})();
-
-function renderFarmerRoster(eqP, fml, method) {
-  const panel = document.getElementById('farmer-roster-panel');
-  if (!panel.classList.contains('open')) return; // only render when visible
-  const al = getAllocs(fml, method);
-  const full_ml = FARMERS.map(f => f.mlPerHA * HAF);
-
-  // Per-farmer earnings with trade
-  const farmerData = FARMERS.map((f, i) => {
-    const alloc = al[i];
-    const full  = full_ml[i];
-    const surplus = alloc - full;
-    let action, earn, qty;
-    if (eqP >= f.thr) {
-      action = 'sell';
-      qty = (alloc / HAF).toFixed(1);
-      earn = Math.round(alloc * eqP);
-    } else if (surplus > 0) {
-      action = surplus > 0.01 ? 'sell' : 'hold';
-      qty = (surplus / HAF).toFixed(1);
-      earn = Math.round(full * f.rev + surplus * eqP);
-    } else if (surplus < -0.01) {
-      action = 'buy';
-      qty = (-surplus / HAF).toFixed(1);
-      earn = Math.round(full * f.rev + surplus * eqP);
-    } else {
-      action = 'hold';
-      qty = 0;
-      earn = Math.round(full * f.rev);
-    }
-    return { ...f, idx: i, alloc, action, qty, earn, name: FARMER_NAMES[i] };
-  });
-
-  // Group by crop type
-  const colCount = 4;
-  let html = '';
-
-  CT.forEach(ct => {
-    const group = farmerData.filter(f => f.crop === ct.name).sort((a, b) => a.thr - b.thr);
-    const cols = Array.from({length: colCount}, () => []);
-    group.forEach((f, i) => cols[i % colCount].push(f));
-
-    const maxRows = Math.max(...cols.map(c => c.length));
-    if (maxRows === 0) return;
-
-    // Section heading spanning all columns
-    html += `<div style="grid-column:1/-1;font-size:10px;font-weight:600;color:${ct.color};padding:5px 4px 2px;border-top:1px solid #e8e0d0;margin-top:4px;">${ct.name} <span style="font-weight:400;color:#999;">(${group.length} farmers · ${ct.annual?'annual':'perennial'} · ${ct.mlPerHA} ML/HA)</span></div>`;
-
-    // Column headers × 4
-    for (let c = 0; c < colCount; c++) {
-      html += `<div class="roster-col-head"><span>Farmer</span><span>$/ML</span><span>Action (ML/HA)</span><span style="text-align:right">Earnings</span></div>`;
-    }
-
-    // Rows
-    for (let row = 0; row < maxRows; row++) {
-      for (let col = 0; col < colCount; col++) {
-        const f = cols[col][row];
-        if (!f) { html += `<div class="roster-row"></div>`; continue; }
-        const actionLabel = f.action === 'sell' ? `Sell ${f.qty}` : f.action === 'buy' ? `Buy ${f.qty}` : 'Hold';
-        const earnFmt = (f.earn >= 0 ? '$' : '−$') + Math.abs(f.earn).toLocaleString();
-        const earnClass = f.earn >= 0 ? 'pos' : 'neg';
-        html += `<div class="roster-row">
-          <span class="r-name" title="${f.name}">${f.name}</span>
-          <span class="r-price">$${f.thr}</span>
-          <span class="r-action ${f.action}">${actionLabel}</span>
-          <span class="r-earn ${earnClass}">${earnFmt}</span>
-        </div>`;
-      }
-    }
-  });
-
-  document.getElementById('farmer-roster-content').innerHTML =
-    `<div class="roster-grid">${html}</div>`;
 }
 
 // ── Distributions chart ────────────────────────────────
@@ -1070,305 +834,10 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name==='market')  { syncBar(); updateMarket(); }
-  if (name==='diag')    buildDiag();
-  if (name==='choke')   { syncChokeBar(); updateChoke(); }
-  if (name==='buyback') { syncBBBar(); setTimeout(updateBuyback, 0); }
+  if (name==='market') { syncBar(); updateMarket(); }
+  if (name==='diag')   buildDiag();
+  if (name==='choke')  { syncChokeBar(); updateChoke(); }
 }
-
-// ══════════════════════════════════════════════════════
-//  BUYBACKS
-// ══════════════════════════════════════════════════════
-let BB_TW = 140000, BB_BW = 0;
-
-function syncBBBar() {
-  const fw = BB_TW, tF = BB_TW/MAXW, bF = BB_BW/MAXW, fF = fw/MAXW;
-  const W = document.getElementById('bb-abar').offsetWidth || 700;
-  document.getElementById('bb-bfarm').style.cssText = `left:0%;width:${(fF*100).toFixed(3)}%;`;
-  document.getElementById('bb-bbuy').style.cssText  = `left:${(fF*100).toFixed(3)}%;width:${(bF*100).toFixed(3)}%;`;
-  document.getElementById('bb-bemp').style.cssText  = `left:${((tF)*100).toFixed(3)}%;width:${((1-tF)*100).toFixed(3)}%;`;
-  document.getElementById('bb-dh-buy').style.left   = (Math.round(fF*W)-7)+'px';
-  document.getElementById('bb-dh-tot').style.left   = (Math.round(tF*W)-7)+'px';
-  document.getElementById('bb-bfarm-l').textContent = fw>3000 ? `Farmers ${fw.toLocaleString()} ML` : '';
-  document.getElementById('bb-bbuy-l').textContent  = BB_BW>2000 ? `Buyback ${BB_BW.toLocaleString()} ML` : '';
-  document.getElementById('bb-bemp-l').textContent  = BB_TW<MAXW-3000 ? '← drag edge to add water' : '';
-  document.getElementById('bb-tw').value = BB_TW;
-  document.getElementById('bb-bw').value = BB_BW;
-  document.getElementById('bb-fml').textContent = (BB_TW/NF/HAF).toFixed(1);
-  // Don't call updateBuyback here — chart canvas may not be visible yet
-}
-
-function onBBNum(w) {
-  if (w==='total') { BB_TW=clamp(parseInt(document.getElementById('bb-tw').value)||140000,MINW,MAXW); BB_BW=clamp(BB_BW,0,Math.floor(BB_TW*.5)); }
-  else { BB_BW=clamp(parseInt(document.getElementById('bb-bw').value)||0,0,Math.floor(BB_TW*.5)); }
-  syncBBBar(); updateBuyback();
-}
-
-mkDrag('bb-abar','bb-dh-tot', f => { BB_TW=Math.round(clamp(f*MAXW,MINW,MAXW)/1000)*1000; BB_BW=clamp(BB_BW,0,Math.floor(BB_TW*.5)); syncBBBar(); }, updateBuyback);
-mkDrag('bb-abar','bb-dh-buy', f => { BB_BW=Math.round(clamp(f*MAXW,0,Math.floor(BB_TW*.5))/500)*500; syncBBBar(); }, updateBuyback);
-syncBBBar(); // bar only — chart renders on first tab switch
-
-// Compute market with government as an additional buyer of govtML
-function computeBuyback(fml, govtML, method) {
-  const al = getAllocs(fml, method);
-
-  // Baseline: no policy — find market price with no govt demand
-  const basePg = Array.from({length:401}, (_,i) => i*5);
-  let baseP = 0, bPs = -1, bPd = 1e12;
-  for (const p of basePg) {
-    const sup = FARMERS.reduce((s,f,i) => p>=f.thr ? s+al[i] : s, 0);
-    const dem = FARMERS.reduce((s,f,i) => p<f.thr  ? s+Math.max(0,f.mlPerHA*HAF-al[i]) : s, 0);
-    if (sup>=dem && bPs<bPd) { baseP=p; break; }
-    bPs=sup; bPd=dem;
-  }
-  let base = 0;
-  FARMERS.forEach((f,i) => {
-    const full = f.mlPerHA*HAF, surp = al[i] - full;
-    if (baseP >= f.thr)      base += al[i] * baseP;
-    else if (surp > 0)       base += full * f.rev + surp * baseP;
-    else if (surp < -0.01)   base += full * f.rev + surp * baseP;
-    else                     base += full * f.rev;
-  });
-
-  // Find equilibrium price where supply >= farmer demand + govt demand
-  const pg = Array.from({length:401}, (_,i) => i*5);
-  let eqP=0, eqQ=0, ps=-1, pd=1e12;
-  for (const p of pg) {
-    const sup = FARMERS.reduce((s,f,i) => p>=f.thr ? s+al[i] : s, 0);
-    const fDem = FARMERS.reduce((s,f,i) => p<f.thr ? s+Math.max(0,f.mlPerHA*HAF-al[i]) : s, 0);
-    const totDem = fDem + govtML;
-    if (sup>=totDem && ps<pd) { eqP=p; eqQ=sup; break; }
-    ps=sup; pd=totDem;
-  }
-
-  // Farmer income with buyback: those selling get paid eqP
-  let bbIncome = 0, sell = 0, buy = 0, f2fQ = 0;
-  FARMERS.forEach((f,i) => {
-    const full = f.mlPerHA * HAF;
-    const surplus = al[i] - full;
-    if (eqP >= f.thr) {
-      sell++;
-      bbIncome += al[i] * eqP; // farmer sells entire allocation at market price
-    } else if (surplus > 0) {
-      bbIncome += full * f.rev + surplus * eqP; // farms + sells surplus
-      f2fQ += surplus;
-    } else if (surplus < -0.01) {
-      buy++;
-      bbIncome += full * f.rev + surplus * eqP; // farms, pays for shortfall
-      f2fQ += -surplus;
-    } else {
-      bbIncome += full * f.rev;
-    }
-  });
-  f2fQ = Math.round(f2fQ / 2); // each trade counted from both sides
-
-  // Mandate comparison: take govtML away for free (no payment), same allocation
-  const mandFml = fml; // same total water distributed to farmers initially
-  const mandAl = getAllocs(mandFml, method);
-  // Under mandate, env water is taken first, then market clears on remainder
-  const mandFarmerFml = Math.max(0, fml - govtML);
-  const mandAlR = getAllocs(mandFarmerFml, method);
-  let mandIncome = 0;
-  const mandPg = Array.from({length:401}, (_,i) => i*5);
-  let mandP = 0, mandQ = 0, mandPs = -1, mandPd = 1e12;
-  for (const p of mandPg) {
-    const sup = FARMERS.reduce((s,f,i) => p>=f.thr ? s+mandAlR[i] : s, 0);
-    const dem = FARMERS.reduce((s,f,i) => p<f.thr  ? s+Math.max(0,f.mlPerHA*HAF-mandAlR[i]) : s, 0);
-    if (sup>=dem && mandPs<mandPd) { mandP=p; mandQ=(sup+dem)/2; break; }
-    mandPs=sup; mandPd=dem;
-  }
-  FARMERS.forEach((f,i) => {
-    const full = f.mlPerHA * HAF, surp = mandAlR[i] - full;
-    if (mandP >= f.thr) mandIncome += mandAlR[i] * mandP;
-    else if (surp > 0)  mandIncome += full * f.rev + surp * mandP;
-    else if (surp < -0.01) mandIncome += full * f.rev + surp * mandP;
-    else mandIncome += full * f.rev;
-  });
-
-  const govtCost = Math.round(govtML * eqP);
-  const bbEnv = govtML;
-
-  const supS2=[...FARMERS.map((f,i)=>({...f,al:al[i]}))].sort((a,b)=>a.thr-b.thr);
-  const demS2=[...FARMERS.map((f,i)=>({...f,al:al[i],def:Math.max(0,f.mlPerHA*HAF-al[i])}))].filter(f=>f.def>0).sort((a,b)=>b.thr-a.thr);
-  const sSteps=[],dSteps=[],tdSteps=[];
-  let cs=0; supS2.forEach(f=>{sSteps.push({x0:cs,x1:cs+f.al,y:f.thr,crop:f.crop});cs+=f.al;});
-  let cd=0; demS2.forEach(f=>{dSteps.push({x0:cd,x1:cd+f.def,y:f.thr,crop:f.crop});cd+=f.def;});
-  let td=govtML; demS2.forEach(f=>{tdSteps.push({x0:td,x1:td+f.def,y:f.thr,crop:f.crop});td+=f.def;});
-  return { eqP, eqQ:Math.round(eqQ), f2fQ, sell, buy,
-           base:Math.round(base), baseP,
-           bbIncome:Math.round(bbIncome),
-           mandIncome:Math.round(mandIncome), mandP, govtCost, bbEnv,
-           sSteps, dSteps, tdSteps, xMax:Math.max(cs,cd+govtML)*1.05, govtML };
-}
-
-function buildBBChart(r) {
-  const ctx = document.getElementById('bbChart').getContext('2d');
-  if (BB_MC) BB_MC.destroy();
-  const legendDs = CT.map(ct => ({
-    label: ct.name, data:[{x:0,y:1},{x:r.xMax,y:Y_MAX}],
-    borderColor:ct.color, backgroundColor:'transparent',
-    showLine:false, pointRadius:0, hidden:hiddenCropsBB.has(ct.name),
-  }));
-  const eqDs = [{ label:'', data:[{x:r.eqQ,y:r.eqP}], borderColor:'#cc3333', backgroundColor:'#cc3333', pointRadius:8, showLine:false }];
-  const bbPlugin = {
-    id:'bbStepsPlugin',
-    afterDraw(chart) {
-      const c=chart.ctx, xs=chart.scales.x, ys=chart.scales.y;
-      if (!xs||!ys) return;
-      c.save();
-      const {left,top,right,bottom}=chart.chartArea;
-      c.beginPath(); c.rect(left,top,right-left,bottom-top); c.clip();
-      r.sSteps.forEach(s=>{
-        if (hiddenCropsBB.has(s.crop)) return;
-        const ct=CT.find(t=>t.name===s.crop);
-        c.beginPath(); c.strokeStyle=ct.color; c.lineWidth=ct.annual?2.5:2; c.setLineDash(ct.annual?[]:[7,4]);
-        c.moveTo(xs.getPixelForValue(s.x0),ys.getPixelForValue(s.y)); c.lineTo(xs.getPixelForValue(s.x1),ys.getPixelForValue(s.y)); c.stroke();
-      });
-      r.dSteps.forEach(s=>{
-        if (hiddenCropsBB.has(s.crop)) return;
-        const ct=CT.find(t=>t.name===s.crop);
-        c.beginPath(); c.strokeStyle=ct.color; c.lineWidth=1.5; c.setLineDash([3,3]);
-        c.moveTo(xs.getPixelForValue(s.x0),ys.getPixelForValue(s.y)); c.lineTo(xs.getPixelForValue(s.x1),ys.getPixelForValue(s.y)); c.stroke();
-      });
-      if (r.govtML>0) r.tdSteps.forEach(s=>{
-        if (hiddenCropsBB.has(s.crop)) return;
-        const ct=CT.find(t=>t.name===s.crop);
-        c.beginPath(); c.strokeStyle=ct.color; c.lineWidth=2.5; c.setLineDash([]);
-        c.moveTo(xs.getPixelForValue(s.x0),ys.getPixelForValue(s.y)); c.lineTo(xs.getPixelForValue(s.x1),ys.getPixelForValue(s.y)); c.stroke();
-      });
-      c.setLineDash([]); c.restore();
-    }
-  };
-  BB_MC = new Chart(ctx, {
-    type:'scatter',
-    data:{ datasets:[...legendDs,...eqDs] },
-    options:{
-      responsive:true, maintainAspectRatio:false, animation:{duration:150},
-      plugins:{
-        legend:{
-          display:true, position:'top',
-          labels:{ font:{size:11}, boxWidth:20,
-            generateLabels(){ return CT.map((ct,i)=>({ text:ct.name, datasetIndex:i, fillStyle:'transparent', strokeStyle:ct.color, lineWidth:ct.annual?2.5:2, lineDash:ct.annual?[]:[7,4], hidden:hiddenCropsBB.has(ct.name) })); }
-          },
-          onClick:(e,li)=>{ const name=li.text; if(hiddenCropsBB.has(name)) hiddenCropsBB.delete(name); else hiddenCropsBB.add(name); BB_MC.data.datasets[li.datasetIndex].hidden=hiddenCropsBB.has(name); BB_MC.update('none'); }
-        },
-        tooltip:{ callbacks:{ label:c=>c.raw?`Q=${Math.round(c.raw.x).toLocaleString()} ML, P=$${c.raw.y}/ML`:'' } }
-      },
-      scales:{
-        x:{ title:{display:true,text:'Cumulative water (ML)',font:{size:11}}, ticks:{font:{size:10},stepSize:10000}, min:0, max:70000 },
-        y:{ title:{display:true,text:'Effective threshold ($/ML)',font:{size:11}}, ticks:{font:{size:10},callback:v=>'$'+v}, min:0, max:Y_MAX }
-      }
-    },
-    plugins:[bbPlugin]
-  });
-}
-
-function updateBuyback() {
-  if (!document.getElementById('tab-buyback').classList.contains('active')) return;
-  const fml = BB_TW, govtML = BB_BW;
-  const method = document.getElementById('bb-method').value;
-  document.getElementById('bb-alloc-desc').textContent = method==='equal' ? 'Each farmer receives an equal share.' : 'Farmers in the north receive disproportionately large allocations.';
-  if (fml < 500) return;
-  const r = computeBuyback(fml, govtML, method);
-  document.getElementById('bb-eq-price').textContent = '$'+r.eqP+'/ML';
-  document.getElementById('bb-f2f').textContent      = r.f2fQ.toLocaleString()+' ML';
-  document.getElementById('bb-qty').textContent      = govtML > 0 ? govtML.toLocaleString()+' ML' : '—';
-  document.getElementById('bb-cost').textContent     = govtML > 0 ? '$'+r.govtCost.toLocaleString() : '—';
-  document.getElementById('bb-sellers').textContent  = r.sell;
-  document.getElementById('bb-buyers').textContent   = r.buy;
-  // Comparison table
-  document.getElementById('bb-base-inc').textContent  = '$'+r.base.toLocaleString();
-  document.getElementById('bb-mand-inc').textContent  = '$'+r.mandIncome.toLocaleString();
-  document.getElementById('bb-bb-inc').textContent    = '$'+r.bbIncome.toLocaleString();
-  document.getElementById('bb-base-cost').textContent = '$0';
-  document.getElementById('bb-mand-cost').textContent = '$0';
-  document.getElementById('bb-bb-cost').textContent   = govtML > 0 ? '$'+r.govtCost.toLocaleString() : '$0';
-  document.getElementById('bb-base-env').textContent  = '0 ML';
-  document.getElementById('bb-mand-env').textContent  = govtML > 0 ? govtML.toLocaleString()+' ML' : '—';
-  document.getElementById('bb-bb-env').textContent    = govtML > 0 ? govtML.toLocaleString()+' ML' : '—';
-  const fmlEff = Math.max(fml - govtML, 1);
-  document.getElementById('bb-base-v').textContent   = '$'+r.baseP+'/ML';
-  document.getElementById('bb-mand-v').textContent   = govtML > 0 ? '$'+r.mandP+'/ML' : '—';
-  document.getElementById('bb-bb-v').textContent     = govtML > 0 ? '$'+r.eqP+'/ML' : '—';
-  buildBBChart(r);
-  renderBBRoster(r.eqP, BB_TW, document.getElementById('bb-method').value);
-}
-
-function toggleBBRoster(toggleEl) {
-  const caret = toggleEl.querySelector('.roster-caret');
-  const panel = document.getElementById('bb-roster-panel');
-  const open = panel.classList.toggle('open');
-  caret.classList.toggle('open', open);
-  if (open) {
-    const method = document.getElementById('bb-method').value;
-    const r = computeBuyback(BB_TW, BB_BW, method);
-    renderBBRoster(r.eqP, BB_TW, method);
-  }
-}
-
-function renderBBRoster(eqP, fml, method) {
-  const panel = document.getElementById('bb-roster-panel');
-  if (!panel.classList.contains('open')) return;
-  const al = getAllocs(fml, method);
-  const full_ml = FARMERS.map(f => f.mlPerHA * HAF);
-
-  const farmerData = FARMERS.map((f, i) => {
-    const alloc = al[i];
-    const full  = full_ml[i];
-    const surplus = alloc - full;
-    let action, earn, qty;
-    if (eqP >= f.thr) {
-      // Sells to govt (or farmer market) at eq price
-      action = 'sell';
-      qty = (alloc / HAF).toFixed(1);
-      earn = Math.round(alloc * eqP);
-    } else if (surplus > 0) {
-      action = 'sell';
-      qty = (surplus / HAF).toFixed(1);
-      earn = Math.round(full * f.rev + surplus * eqP);
-    } else if (surplus < -0.01) {
-      action = 'buy';
-      qty = (-surplus / HAF).toFixed(1);
-      earn = Math.round(full * f.rev + surplus * eqP);
-    } else {
-      action = 'hold';
-      qty = 0;
-      earn = Math.round(full * f.rev);
-    }
-    return { ...f, idx: i, alloc, action, qty, earn, name: FARMER_NAMES[i] };
-  });
-
-  const colCount = 4;
-  let html = '';
-  CT.forEach(ct => {
-    const group = farmerData.filter(f => f.crop === ct.name).sort((a, b) => a.thr - b.thr);
-    const cols = Array.from({length: colCount}, () => []);
-    group.forEach((f, i) => cols[i % colCount].push(f));
-    const maxRows = Math.max(...cols.map(c => c.length));
-    if (maxRows === 0) return;
-    html += `<div style="grid-column:1/-1;font-size:10px;font-weight:600;color:${ct.color};padding:5px 4px 2px;border-top:1px solid #e8e0d0;margin-top:4px;">${ct.name} <span style="font-weight:400;color:#999;">(${group.length} farmers · ${ct.annual?'annual':'perennial'} · ${ct.mlPerHA} ML/HA)</span></div>`;
-    for (let c = 0; c < colCount; c++) {
-      html += `<div class="roster-col-head"><span>Farmer</span><span>$/ML</span><span>Action (ML/HA)</span><span style="text-align:right">Earnings</span></div>`;
-    }
-    for (let row = 0; row < maxRows; row++) {
-      for (let col = 0; col < colCount; col++) {
-        const f = cols[col][row];
-        if (!f) { html += `<div class="roster-row"></div>`; continue; }
-        const actionLabel = f.action === 'sell' ? `Sell ${f.qty}` : f.action === 'buy' ? `Buy ${f.qty}` : 'Hold';
-        const earnFmt = (f.earn >= 0 ? '$' : '−$') + Math.abs(f.earn).toLocaleString();
-        const earnClass = f.earn >= 0 ? 'pos' : 'neg';
-        html += `<div class="roster-row">
-          <span class="r-name" title="${f.name}">${f.name}</span>
-          <span class="r-price">$${f.thr}</span>
-          <span class="r-action ${f.action}">${actionLabel}</span>
-          <span class="r-earn ${earnClass}">${earnFmt}</span>
-        </div>`;
-      }
-    }
-  });
-  document.getElementById('bb-roster-content').innerHTML = `<div class="roster-grid">${html}</div>`;
-}
-
 </script>
 </body>
 </html>
