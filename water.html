@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Murray-Darling Water Market — ECON20004</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, serif; background: #faf8f4; color: #222; font-size: 16px; line-height: 1.5; }
+.page { max-width: 1240px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+h1 { font-size: 30px; font-weight: 500; margin-bottom: 2px; color: #1e3a2f; }
+.subtitle { font-size: 16px; color: #666; margin-bottom: 1.5rem; }
+.tab-nav { display: flex; flex-wrap: wrap; border-bottom: 2px solid #1e3a2f; margin-bottom: 1.5rem; }
+.tab-btn { padding: 10px 18px; font-size: 17px; font-family: Georgia, serif; border: none; background: transparent; cursor: pointer; color: #555; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+.tab-btn.active { color: #1e3a2f; border-bottom-color: #1e3a2f; font-weight: 600; }
+.tab-btn:hover:not(.active) { color: #111; }
+.panel { display: none; } .panel.active { display: block; }
+.intro { font-size: 16px; color: #333; margin-bottom: 1rem; line-height: 1.6; max-width: 1050px; }
+.callout { background: #fff8e8; border: 1px solid #e0c060; border-radius: 6px; padding: 12px 15px; font-size: 15px; color: #333; margin-bottom: 1rem; line-height: 1.6; }
+.callout strong { color: #6a3f00; }
+.note { background: #eef3fb; border: 1px solid #b0c4e8; border-radius: 6px; padding: 10px 14px; font-size: 15px; color: #1f2f4f; margin: .75rem 0; line-height: 1.55; }
+.section-label { font-size: 16px; font-weight: 600; color: #1e3a2f; margin: 1rem 0 .3rem; }
+.tag-irr  { background:#e3f0e3; color:#14501a; padding:1px 7px; border-radius:3px; }
+.tag-sell { background:#fff0d9; color:#7a3c00; padding:1px 7px; border-radius:3px; }
+
+/* ── Farm table ── */
+.legend { display: flex; gap: 20px; font-size: 14px; color: #444; margin-bottom: .8rem; flex-wrap: wrap; align-items: center; }
+.leg-sw { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 5px; vertical-align: -2px; }
+table.main { border-collapse: collapse; font-size: 15px; width: 100%; }
+table.main th { background: #1e3a2f; color: #fff; padding: 7px 8px; font-weight: 500; font-size: 14px; text-align: center; white-space: nowrap; }
+table.main th.left { text-align: left; }
+table.main td { padding: 4px 6px; text-align: center; border-bottom: 1px solid #e4e0d8; white-space: nowrap; }
+table.main td.price-col { text-align: left; font-weight: 600; padding-left: 10px; }
+table.main tr.meta-row td { background: #f5f0e8; font-size: 14px; color: #444; border-bottom: 1px solid #ddd; }
+table.main tr.meta-row td.dpm { background: #dde4ef; color: #1f2f4f; font-weight: 700; }
+table.main tr.meta-row td.left { text-align: left; padding-left: 10px; font-style: italic; }
+table.main th.sale-h { background:#fff0d9; color:#7a3c00; border-left:3px solid #7a3c00; }
+table.main th.buy-h  { background:#e3f0e3; color:#14501a; }
+table.main td.sale-c { border-left:3px solid #7a3c00; color:#7a3c00; font-weight:600; }
+table.main td.buy-c  { color:#14501a; font-weight:600; }
+.dcell { cursor: pointer; border-radius: 4px; padding: 3px 6px; font-size: 14px; min-width: 88px; display: inline-block; border: 1.5px solid transparent; user-select: none; }
+.dcell.blank { background: #f0ede8; color: #777; border-color: #ccc; }
+.dcell.blank:hover { background: #e6e1d8; }
+.dcell.irr  { background: #e3f0e3; color: #14501a; border-color: #7aab7a; font-weight: 600; }
+.dcell.sell { background: #fff0d9; color: #7a3c00; border-color: #e0a060; font-weight: 600; }
+.dcell.ok   { border-color: #111; border-width: 2px; }
+.dcell.bad  { background: #fde3e3; color: #8b1a1a; border-color: #b00020; border-width: 2px; border-style: dashed; }
+.dcell.shown { font-style: italic; font-weight: 400; opacity: .85; }
+.btn-row { display: flex; gap: 10px; margin: 1rem 0 .5rem; flex-wrap: wrap; }
+button.action { padding: 8px 20px; font-size: 15px; font-family: Georgia, serif; border-radius: 4px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+button.action:hover { background: #f0ede8; }
+button.action.primary { background: #1e3a2f; color: #fff; border-color: #1e3a2f; }
+button.action.primary:hover { background: #2d5a3d; }
+.score-line { font-size: 15px; color: #333; margin-top: .5rem; min-height: 1.5em; }
+
+/* ── Shared water controls ── */
+.controls { background: #fff; border: 1px solid #ddd6c8; border-radius: 8px; padding: 14px 16px 10px; margin-bottom: 1.25rem; }
+.water-inputs { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 10px; font-size: 15px; color: #333; align-items: center; }
+.water-inputs label { display: flex; align-items: center; gap: 8px; }
+.water-inputs input[type=number] { width: 104px; padding: 5px 8px; font-size: 15px; border-radius: 4px; border: 1px solid #bbb; font-family: Georgia, serif; }
+.water-inputs select { font-size: 15px; padding: 5px 9px; border-radius: 4px; border: 1px solid #bbb; font-family: Georgia, serif; }
+.bar-top { position: relative; height: 22px; font-size: 13px; color: #555; }
+.bar-top span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.alloc-bar-wrap { position: relative; height: 54px; border-radius: 8px; background: #e8e0d0; border: 1px solid #c8b890; user-select: none; }
+.bar-seg { position: absolute; top: 0; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.bar-seg.env   { background: #a5d6a0; border-radius: 8px 0 0 8px; left: 0; }
+.bar-seg.buy   { background: #2a8f8f; }
+.bar-seg.farm  { background: #3f7fc4; }
+.bar-seg.empty { background: #e8e0d0; border-radius: 0 8px 8px 0; justify-content: flex-start; padding-left: 14px; }
+.bar-lbl { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; pointer-events: none; padding: 0 8px; }
+.bar-lbl.env-lbl { color: #12401a; }
+.bar-lbl-muted { font-size: 14px; color: #857552; pointer-events: none; }
+.need-mark { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed #222; pointer-events: none; z-index: 5; }
+.dh { position: absolute; top: 0; width: 16px; height: 100%; cursor: col-resize; z-index: 10; background: rgba(0,0,0,.35); border-radius: 3px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.dh::after { content: '⋮'; color: #fff; font-size: 17px; pointer-events: none; }
+.bar-scale { display: flex; justify-content: space-between; font-size: 13px; color: #666; padding: 2px 1px 0; }
+.ctl-summary { font-size: 15px; color: #1f2f4f; margin-top: 6px; }
+
+/* ── Badges, charts, tables ── */
+.eq-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: .85rem; }
+.eq-badge { background: #f1ebdf; border-radius: 8px; padding: 9px 15px; }
+.eq-badge-label { font-size: 13px; color: #555; }
+.eq-badge-val { font-size: 22px; font-weight: 600; margin-top: 1px; }
+.chart-row { display: flex; gap: 14px; align-items: flex-start; }
+.chart-row .chart-wrap { flex: 1; min-width: 0; }
+.side-badges { display: flex; flex-direction: column; gap: 8px; width: 200px; margin-top: .4rem; }
+@media (max-width: 900px) { .chart-row { flex-direction: column; } .side-badges { flex-direction: row; flex-wrap: wrap; width: auto; } }
+.key { display: flex; gap: 6px 20px; flex-wrap: wrap; font-size: 14px; color: #333; margin: .35rem 0 .2rem; align-items: center; }
+.key i.ln { display: inline-block; width: 26px; height: 0; border-top: 3px solid #000; margin-right: 6px; vertical-align: 4px; }
+.key i.ln.thin { border-top-width: 1.5px; border-top-style: dashed; }
+.key i.sw { display: inline-block; width: 16px; height: 12px; margin-right: 5px; vertical-align: -1px; border-radius: 2px; }
+.key i.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; border: 2px solid #333; }
+.chart-wrap { position: relative; width: 100%; height: 460px; margin: .4rem 0 .75rem; }
+.tip { position: absolute; pointer-events: none; background: rgba(255,255,255,.97); border: 1px solid #999; border-radius: 6px; padding: 7px 10px; font-size: 14px; line-height: 1.45; color: #222; max-width: 340px; display: none; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.tip b.s { color: #8c2d04; } .tip b.d { color: #08306b; }
+table.cmp { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: .85rem; }
+table.cmp th { background: #1e3a2f; color: #fff; padding: 8px 12px; font-weight: 500; font-size: 15px; text-align: right; }
+table.cmp th:first-child { text-align: left; }
+table.cmp td { padding: 7px 12px; border-bottom: 1px solid #e4e0d8; text-align: right; }
+table.cmp td:first-child { text-align: left; }
+table.cmp tr.total td { font-weight: 700; background: #f1ebdf; }
+table.cmp tr.cost td { font-weight: 700; background: #fde9dc; color: #7a2500; }
+table.cmp td small { color: #555; font-weight: 400; }
+.foot { font-size: 14px; color: #555; margin-top: .4rem; line-height: 1.5; }
+
+/* ── Choke ── */
+.k-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 15px; margin: .5rem 0 .25rem; }
+.k-row input[type=range] { width: 340px; }
+.k-row output { font-weight: 700; min-width: 96px; }
+.zone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: .5rem; }
+@media (max-width: 900px) { .zone-grid { grid-template-columns: 1fr; } }
+.zone-card { border-radius: 8px; border: 1px solid #ccc; overflow: hidden; background: #fff; }
+.zone-header { padding: 9px 14px; font-size: 17px; font-weight: 600; color: #fff; display: flex; align-items: baseline; gap: 10px; }
+.zone-header.north { background: #5a3d1a; } .zone-header.south { background: #1a3f5a; }
+.zone-header span { font-size: 14px; font-weight: 400; opacity: .9; }
+.zone-badges { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 10px; background: #f9f7f4; border-bottom: 1px solid #eee; }
+.zone-badge { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 5px 11px; }
+.zone-badge-label { font-size: 12.5px; color: #555; }
+.zone-badge-val { font-size: 19px; font-weight: 600; }
+.zone-chart { position: relative; height: 380px; padding: 6px 8px 8px; }
+
+/* ── Farmer roster ── */
+.roster-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 1.2rem; font-size: 16px; color: #1e3a2f; font-weight: 600; user-select: none; padding: 8px 0; border-top: 1px solid #ddd; }
+.roster-caret { font-size: 12px; transition: transform .2s; display: inline-block; }
+.roster-caret.open { transform: rotate(90deg); }
+.roster-panel { display: none; margin-top: .5rem; } .roster-panel.open { display: block; }
+.roster-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 18px; }
+@media (max-width: 900px) { .roster-grid { grid-template-columns: 1fr; } }
+.roster-sec { grid-column: 1/-1; font-size: 15px; font-weight: 700; padding: 3px 8px; margin: 10px 0 3px; background: #f1ebdf; }
+.roster-sec span { font-weight: 400; color: #555; }
+.roster-head, .roster-row { display: grid; grid-template-columns: 2fr 1.2fr 1.3fr 1.4fr; gap: 0 6px; padding: 2px 4px; }
+.roster-head { font-size: 12px; color: #555; border-bottom: 1px solid #ccc; text-transform: uppercase; letter-spacing: .03em; }
+.roster-row { font-size: 13.5px; }
+.roster-row:hover { background: #f1ebdf; }
+.roster-row .r-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roster-row .sell { color: #7a3c00; font-weight: 700; } .roster-row .buy { color: #14501a; font-weight: 700; } .roster-row .hold { color: #666; }
+.roster-row .r-earn, .roster-head .r-earn { text-align: right; }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Murray-Darling water market</h1>
+<p class="subtitle">ECON20004 · University of Melbourne · all numbers are illustrative</p>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('farm',this)">1. My farm decisions</button>
+  <button class="tab-btn" onclick="switchTab('diag',this)">2. Value of water</button>
+  <button class="tab-btn" onclick="switchTab('market',this)">3. Market</button>
+  <button class="tab-btn" onclick="switchTab('choke',this)">4. Barmah Choke</button>
+  <button class="tab-btn" onclick="switchTab('mix',this)">5. Reserve vs buyback</button>
+</nav>
+
+<!-- ══════════ PANEL 1: FARM ══════════ -->
+<div class="panel active" id="tab-farm">
+  <p class="intro">Here are 8 farmers. Each has <strong>20 HA</strong> and a water allocation of <strong>4 ML/HA (80 ML)</strong>. <em>Net return</em> is revenue minus all non-water costs. At each water price, each farmer either produces and <span class="tag-irr">irrigates</span> the whole farm as needed (buying any water shortfall in the market) or keeps the land fallow and <span class="tag-sell">sells</span> their water allocation into the market. Click a cell to choose. For now, assume no switching costs.</p>
+  <div class="legend">
+    <span><span class="leg-sw" style="background:#e3f0e3;border:1px solid #7aab7a;"></span>Irrigate (buy the shortfall)</span>
+    <span><span class="leg-sw" style="background:#fff0d9;border:1px solid #e0a060;"></span>Sell 80 ML</span>
+    <span><span class="leg-sw" style="background:#f0ede8;border:1px solid #ccc;"></span>Not filled in</span>
+  </div>
+  <table class="main">
+    <thead id="farm-thead"></thead>
+    <tbody id="farm-tbody"></tbody>
+  </table>
+  <div class="btn-row">
+    <button class="action primary" onclick="t1Check()">Check answers</button>
+    <button class="action" onclick="t1Reveal()">Reveal all</button>
+    <button class="action" onclick="t1Reset()">Reset</button>
+  </div>
+  <div class="score-line" id="score-line"></div>
+  <div class="section-label">Supply and demand curves</div>
+  <p class="foot" id="t1-chart-note">Each completed row adds one point to each curve. Tab 3 does the same thing with 470 farmers.</p>
+  <div class="chart-wrap" style="height:340px;"><canvas id="t1Chart"></canvas></div>
+</div>
+
+<!-- ══════════ PANEL 2: VALUE OF WATER ══════════ -->
+<div class="panel" id="tab-diag">
+  <p class="intro">We now simulate 470 farmers with land best suited to different crops, with different yields or cost structures. A filled dot is the farmer's seasonal net return per ML. For perennial growers a line runs to an open circle: the price above which they would actually sell, once the cost of losing trees, vines or herds is counted. Within each crop, farmers are stacked from lowest to highest return. Hover over a dot for details.</p>
+  <div class="callout">
+    <strong>Why perennials are reluctant sellers.</strong> Vines and almond trees take years to re-establish, and dairy herds cannot be rebuilt overnight. Selling water for a season risks destroying the permanent asset, so a perennial grower holds on to water until the price is well above the seasonal return.
+    Switching-cost premiums used here: <strong>Dairy</strong> +$150–250/ML · <strong>Grapes</strong> +$200–350/ML · <strong>Citrus</strong> +$250–400/ML · <strong>Almonds</strong> +$300–500/ML. Rice and cotton have none.
+  </div>
+  <div class="key">
+    <span><i class="dot" style="background:#555;"></i>Seasonal net return per ML</span>
+    <span><i class="dot" style="background:#faf8f4;"></i>Price needed to sell (net return + switching cost)</span>
+  </div>
+  <div class="chart-wrap" style="height:600px;"><canvas id="diagChart"></canvas></div>
+</div>
+
+<!-- ══════════ SHARED CONTROLS (tabs 3–5) ══════════ -->
+  <div class="callout tabnote" id="callout-choke" style="display:none;">
+    <strong>The Barmah Choke</strong> is a narrow stretch of the Murray that limits how much water can be delivered from the upstream (north) part of the basin to the downstream (south) part. Rice and cotton farms sit mostly in the north; grapes, citrus and almonds mostly in the south. If the south wants to buy more water than the choke can carry, the two zones clear at different prices.
+  </div>
+  <div class="callout tabnote" id="callout-mix" style="display:none;">
+    <strong>Reserve, buyback, or a mix.</strong> Set a <em>reserve</em> (taken before farmers receive their allocations, with no payment) and a government <em>buyback</em> (bought from farmers in the market), in any combination. The two graphs show the same market in two ways: all the water in the basin, and only the water that changes hands.
+  </div>
+<div class="controls" id="controls" style="display:none;">
+  <div class="water-inputs">
+    <label>Total water available (ML): <input type="number" id="tw" min="2000" max="120000" step="1000"></label>
+    <label><span id="ew-label">Environmental reserve (ML):</span> <input type="number" id="ew" min="0" max="60000" step="500"></label>
+    <label id="bb-wrap" style="display:none;">Buyback (ML): <input type="number" id="bbw" min="0" max="60000" step="500"></label>
+    <label>Initial allocation:
+      <select id="method">
+        <option value="equal">Equal share</option>
+        <option value="historical">Legacy entitlements</option>
+      </select>
+    </label>
+  </div>
+  <div class="bar-top"><span id="need-lbl"></span></div>
+  <div class="alloc-bar-wrap" id="abar">
+    <div class="bar-seg env"   id="benv"><span class="bar-lbl env-lbl" id="benv-l"></span></div>
+    <div class="bar-seg buy"   id="bbuy"><span class="bar-lbl" id="bbuy-l"></span></div>
+    <div class="bar-seg farm"  id="bfarm"><span class="bar-lbl" id="bfarm-l"></span></div>
+    <div class="bar-seg empty" id="bemp"><span class="bar-lbl-muted" id="bemp-l"></span></div>
+    <div class="need-mark" id="need-mark"></div>
+    <div class="dh" id="dh-env" title="Drag to set environmental water"></div>
+    <div class="dh" id="dh-bb" title="Drag to set the government buyback" style="display:none;"></div>
+    <div class="dh" id="dh-tot" title="Drag to set total water"></div>
+  </div>
+  <div class="bar-scale"><span>0</span><span>30,000</span><span>60,000</span><span>90,000</span><span>120,000 ML</span></div>
+  <div class="ctl-summary" id="ctl-summary"></div>
+</div>
+
+<!-- ══════════ PANEL 3: MARKET ══════════ -->
+<div class="panel" id="tab-market">
+  <div class="section-label">Supply and demand for traded water</div>
+  <div class="key">
+    <span><i class="ln" style="border-color:#8c2d04;"></i>Supply (offers to sell)</span>
+    <span><i class="ln" style="border-color:#08306b;"></i>Demand (bids to buy)</span>
+    <span><i class="sw" style="background:rgba(240,196,50,.45);"></i>Gains from trade</span>
+    <span><i class="ln" style="border-color:#aaa49a;"></i>Before your last change</span>
+  </div>
+  <div class="key cropkey"></div>
+  <div class="chart-row">
+    <div class="chart-wrap" style="height:410px;"><canvas id="mktChart"></canvas></div>
+  <div class="side-badges">
+    <div class="eq-badge"><div class="eq-badge-label">Market price</div><div class="eq-badge-val" id="eq-price">—</div></div>
+    <div class="eq-badge"><div class="eq-badge-label">Water traded</div><div class="eq-badge-val" id="eq-traded">—</div></div>
+    <div class="eq-badge"><div class="eq-badge-label">Sellers</div><div class="eq-badge-val" id="eq-sellers">—</div></div>
+    <div class="eq-badge"><div class="eq-badge-label">Buyers</div><div class="eq-badge-val" id="eq-buyers">—</div></div>
+    <div class="eq-badge"><div class="eq-badge-label">Gains from trade</div><div class="eq-badge-val" id="eq-gains">—</div></div>
+  </div>
+  </div>
+  <table class="cmp">
+    <thead><tr><th>Metric</th><th>No trade</th><th>With trade</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td>Seasonal net returns ($)</td><td id="m-s0"></td><td id="m-s1"></td><td id="m-sc"></td></tr>
+      <tr><td>Perennial asset losses avoided ($)</td><td id="m-a0"></td><td id="m-a1"></td><td id="m-ac"></td></tr>
+      <tr class="total"><td>Total value of water use ($)</td><td id="m-t0"></td><td id="m-t1"></td><td id="m-tc"></td></tr>
+      <tr><td>Water used on farms (ML)</td><td id="m-u0"></td><td id="m-u1"></td><td id="m-uc"></td></tr>
+    </tbody>
+  </table>
+  <p class="foot">The change in total value equals the shaded area in the chart. A farmer's income is net return on the water used, plus water sold, minus water bought; see the list below.</p>
+  <div class="roster-toggle" onclick="toggleRoster(this,'mkt-roster')"><span class="roster-caret">▶</span>All farmers — trades and income</div>
+  <div class="roster-panel" id="mkt-roster"></div>
+</div>
+
+<!-- ══════════ PANEL 4: BARMAH CHOKE ══════════ -->
+<div class="panel" id="tab-choke">
+  <div class="k-row">
+    <label for="choke-k">Choke capacity (max water that can be traded north → south):</label>
+    <input type="range" id="choke-k" min="0" max="20000" step="500">
+    <output id="choke-k-out"></output>
+  </div>
+  <div class="key">
+    <span><i class="ln" style="border-color:#8c2d04;"></i>Supply</span>
+    <span><i class="ln" style="border-color:#08306b;"></i>Demand</span>
+    <span><i class="ln thin" style="border-color:#555;"></i>Local farmers only (before water crosses the choke)</span>
+    <span><i class="sw" style="background:rgba(40,150,150,.22);"></i>Water crossing the choke</span>
+  </div>
+  <div class="key cropkey"></div>
+  <div class="zone-grid">
+    <div class="zone-card">
+      <div class="zone-header north">North zone <span id="n-sub"></span></div>
+      <div class="zone-badges">
+        <div class="zone-badge"><div class="zone-badge-label">Price</div><div class="zone-badge-val" id="n-price">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Sold by local farmers</div><div class="zone-badge-val" id="n-sold">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Bought by local farmers</div><div class="zone-badge-val" id="n-bought">—</div></div>
+      </div>
+      <div class="zone-chart"><canvas id="northChart"></canvas></div>
+    </div>
+    <div class="zone-card">
+      <div class="zone-header south">South zone <span id="s-sub"></span></div>
+      <div class="zone-badges">
+        <div class="zone-badge"><div class="zone-badge-label">Price</div><div class="zone-badge-val" id="s-price">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Sold by local farmers</div><div class="zone-badge-val" id="s-sold">—</div></div>
+        <div class="zone-badge"><div class="zone-badge-label">Bought by local farmers</div><div class="zone-badge-val" id="s-bought">—</div></div>
+      </div>
+      <div class="zone-chart"><canvas id="southChart"></canvas></div>
+    </div>
+  </div>
+  <div class="note" id="choke-note"></div>
+  <table class="cmp">
+    <thead><tr><th>Metric</th><th>No trade</th><th id="c-h1">Trade with the choke</th><th>Trade with no choke</th></tr></thead>
+    <tbody>
+      <tr><td>North price ($/ML)</td><td>—</td><td id="c-pn1"></td><td id="c-pn2"></td></tr>
+      <tr><td>South price ($/ML)</td><td>—</td><td id="c-ps1"></td><td id="c-ps2"></td></tr>
+      <tr><td>Water traded north → south (ML)</td><td>0</td><td id="c-f1"></td><td id="c-f2"></td></tr>
+      <tr><td>Value of water use — North ($)</td><td id="c-vn0"></td><td id="c-vn1"></td><td id="c-vn2"></td></tr>
+      <tr><td>Value of water use — South ($)</td><td id="c-vs0"></td><td id="c-vs1"></td><td id="c-vs2"></td></tr>
+      <tr class="total"><td>Value of water use — Total ($)</td><td id="c-vt0"></td><td id="c-vt1"></td><td id="c-vt2"></td></tr>
+      <tr class="cost"><td>Cost of the choke ($)</td><td></td><td id="c-cost"></td><td>$0</td></tr>
+    </tbody>
+  </table>
+  <p class="foot">Value of water use = seasonal net returns + perennial asset losses avoided, as in tab 3. The cost of the choke is the total value lost compared with a single basin-wide market.</p>
+</div>
+
+<!-- ══════════ PANEL 5: RESERVE VS BUYBACK ══════════ -->
+<div class="panel" id="tab-mix">
+  <div class="key">
+    <span><i class="ln" style="border-color:#8c2d04;"></i>Supply</span>
+    <span><i class="ln" style="border-color:#08306b;"></i>Demand</span>
+    <span><i class="ln thin" style="border-color:#08306b;"></i>Farmers' demand only</span>
+    <span><i class="sw" style="background:rgba(110,190,110,.35);"></i>Reserved</span>
+    <span><i class="sw" style="background:rgba(40,150,150,.28);"></i>Government purchase</span>
+    <span><i class="ln" style="border-color:#aaa49a;"></i>With no environmental water</span>
+  </div>
+  <div class="key cropkey"></div>
+  <div class="zone-grid">
+    <div class="zone-card">
+      <div class="zone-header" style="background:#3d3d3d;">All water <span>how much farmers hold, and what water is worth to them</span></div>
+      <div class="zone-chart" style="height:420px;"><canvas id="mixTotalChart"></canvas></div>
+    </div>
+    <div class="zone-card">
+      <div class="zone-header" style="background:#3d3d3d;">Traded water <span>what farmers offer for sale and bid for</span></div>
+      <div class="zone-chart" style="height:420px;"><canvas id="mixTradeChart"></canvas></div>
+    </div>
+  </div>
+  <div class="note" id="mix-note"></div>
+  <table class="cmp">
+    <thead><tr><th>Metric</th><th>No environmental water</th><th id="x-h1">Your mix</th><th id="x-h2">All by reserve</th><th id="x-h3">All by buyback</th></tr></thead>
+    <tbody>
+      <tr><td>Market price ($/ML)</td><td id="x-p0"></td><td id="x-p1"></td><td id="x-p2"></td><td id="x-p3"></td></tr>
+      <tr><td>Environmental water (ML)</td><td>0</td><td id="x-e1"></td><td id="x-e2"></td><td id="x-e3"></td></tr>
+      <tr><td>Water used on farms (ML)</td><td id="x-u0"></td><td id="x-u1"></td><td id="x-u2"></td><td id="x-u3"></td></tr>
+      <tr><td>Farm production: seasonal net returns ($)</td><td id="x-s0"></td><td id="x-s1"></td><td id="x-s2"></td><td id="x-s3"></td></tr>
+      <tr><td>Government cost ($)</td><td>$0</td><td id="x-c1"></td><td>$0</td><td id="x-c3"></td></tr>
+      <tr class="total"><td>Farmer income: production + sales to government ($)</td><td id="x-i0"></td><td id="x-i1"></td><td id="x-i2"></td><td id="x-i3"></td></tr>
+    </tbody>
+  </table>
+  <p class="foot">The last two columns secure the same total environmental water as your mix, entirely by reserve or entirely by buyback. All columns let farmers trade with each other.</p>
+  <div class="roster-toggle" onclick="toggleRoster(this,'mix-roster')"><span class="roster-caret">▶</span>All farmers — trades and income under your mix</div>
+  <div class="roster-panel" id="mix-roster"></div>
+</div>
+
+</div><!-- /page -->
+<script>
+/*MODEL-START*/
+// ══════════════════════════════════════════════════════
+//  MODEL  (no page access in this block)
+// ══════════════════════════════════════════════════════
+// Each farmer has 20 HA and a constant net return per ML up to full
+// irrigation need. A farmer keeps water while the price is below the
+// threshold (net return + switching cost) and sells it above.
+const HAF = 20, MAXW = 120000, MINW = 2000, EPS = 1e-6;
+const CT = [
+  { name:'Rice',    color:'#E69F00', annual:true,  count:150, mlPerHA:12, minRev:100, maxRev:220, scMin:0,   scMax:0   },
+  { name:'Cotton',  color:'#56B4E9', annual:true,  count:120, mlPerHA:9,  minRev:180, maxRev:380, scMin:0,   scMax:0   },
+  { name:'Dairy',   color:'#009E73', annual:false, count:40,  mlPerHA:8,  minRev:250, maxRev:380, scMin:150, scMax:250 },
+  { name:'Grapes',  color:'#CC79A7', annual:false, count:70,  mlPerHA:8,  minRev:420, maxRev:750, scMin:200, scMax:350 },
+  { name:'Citrus',  color:'#D55E00', annual:false, count:50,  mlPerHA:6,  minRev:480, maxRev:680, scMin:250, scMax:400 },
+  { name:'Almonds', color:'#0072B2', annual:false, count:40,  mlPerHA:14, minRev:650, maxRev:950, scMin:300, scMax:500 },
+];
+const CROP = Object.fromEntries(CT.map(c => [c.name, c]));
+const fmt = n => Math.round(n).toLocaleString('en-AU');
+
+function lcg(s) { s=s>>>0; return () => { s=Math.imul(s,1664525)+1013904223>>>0; return s/0x100000000; }; }
+const FARMERS = (() => {
+  const rng = lcg(20240428), a = [];
+  CT.forEach(ct => {
+    for (let i=0; i<ct.count; i++) {
+      const rev = Math.round(ct.minRev + rng()*(ct.maxRev-ct.minRev));
+      const sc  = ct.annual ? 0 : Math.round(ct.scMin + rng()*(ct.scMax-ct.scMin));
+      a.push({ crop:ct.name, annual:ct.annual, mlPerHA:ct.mlPerHA, need:ct.mlPerHA*HAF,
+               rev, sc, thr:rev+sc, hm:0.3+rng()*1.4 });
+    }
+  });
+  return a;
+})();
+const NF = FARMERS.length;
+const TOTAL_NEED = FARMERS.reduce((s,f) => s+f.need, 0);
+const Y_MAX = Math.ceil(Math.max(...FARMERS.map(f=>f.thr)) * 1.08 / 100) * 100;
+
+// Zones: share of each crop that farms upstream of the choke
+const NORTH_FRAC = { Rice:0.85, Cotton:0.80, Dairy:0.50, Grapes:0.15, Citrus:0.20, Almonds:0.10 };
+(() => { const r = lcg(20240429); FARMERS.forEach(f => { f.zone = r() < NORTH_FRAC[f.crop] ? 'north' : 'south'; }); })();
+(() => {
+  const first = ['Alex','Blake','Casey','Dana','Ellis','Fran','Glen','Harper','Indira','Jules','Kim','Lee','Morgan','Nadia','Owen','Pat','Quinn','Raj','Sam','Tara',
+                 'Uma','Val','Wei','Xan','Yara','Zoe','Beau','Cleo','Drew','Erin','Finn','Gabi','Hiro','Iris','Jace','Kira','Luca','Mara','Neil','Opal',
+                 'Prue','Reed','Skye','Toby','Una','Vance','Wren','Xiu','Yael','Zara'];
+  const last  = ['Anderson','Baker','Chen','Davis','Evans','Foster','Garcia','Hill','Ito','Jones','Kim','Lee','Martin','Nguyen','Okafor','Patel','Quinn','Russo','Singh','Taylor',
+                 'Ueda','Vargas','Walsh','Xu','Yamamoto','Zhu','Abbott','Bauer','Costa','Dunn','Ellis','Flynn','Gomez','Hayes','Ibrahim','Johal','Kang','Lam','Moss','Nash',
+                 'Ortega','Park','Reyes','Stone','Tran','Upton','Voss','Wong','Yuen','Zhang'];
+  const rn = lcg(20240430);
+  FARMERS.forEach(f => { f.name = first[Math.floor(rn()*first.length)] + ' ' + last[Math.floor(rn()*last.length)]; });
+})();
+const ALL = FARMERS.map((_,i) => i);
+const NORTH_IDS = ALL.filter(i => FARMERS[i].zone === 'north');
+const SOUTH_IDS = ALL.filter(i => FARMERS[i].zone === 'south');
+
+// Initial allocations. Legacy entitlements ('historical') give rice and cotton growers larger
+// entitlements per hectare than perennial growers.
+const HIST_WEIGHT = { Rice:2.8, Cotton:2.4, Dairy:0.9, Grapes:0.7, Citrus:0.8, Almonds:0.6 };
+function getAllocs(water, method) {
+  if (method === 'equal') return FARMERS.map(() => water/NF);
+  const w = FARMERS.map(f => HIST_WEIGHT[f.crop] * (0.85 + f.hm/1.4*0.3));
+  const sum = w.reduce((s,x) => s+x, 0);
+  return w.map(x => x/sum*water);
+}
+
+// Competitive outcome for a group of farmers sharing `water`: water goes to
+// the highest thresholds first; the price is the threshold of the farmer at
+// which water runs out, or zero if everyone can irrigate fully.
+function clearMarket(ids, water) {
+  const order = ids.slice().sort((a,b) => FARMERS[b].thr - FARMERS[a].thr || a-b);
+  const fin = new Array(NF).fill(0);
+  let left = Math.max(0, water), price = 0;
+  for (const i of order) {
+    if (left <= EPS) break;
+    const w = Math.min(FARMERS[i].need, left);
+    fin[i] = w; left -= w;
+    if (left <= EPS) price = FARMERS[i].thr;
+  }
+  return { fin, price, unused: left > EPS ? left : 0 };
+}
+const noTradeFin = al => al.map((a,i) => Math.min(a, FARMERS[i].need));
+
+function summarize(ids, al, fin, P) {
+  const r = { seasonal:0, assets:0, total:0, used:0, bought:0, sold:0, income:0, sellers:0, buyers:0 };
+  for (const i of ids) {
+    const f = FARMERS[i], net = fin[i] - al[i];
+    r.seasonal += fin[i]*f.rev; r.assets += fin[i]*f.sc; r.used += fin[i];
+    if (net > EPS) { r.bought += net; r.buyers++; }
+    else if (net < -EPS) { r.sold += -net; r.sellers++; }   // if P = 0 this is spare water, not all of it sold
+    r.income += fin[i]*f.rev - net*P;
+  }
+  r.total = r.seasonal + r.assets;
+  return r;
+}
+
+// Offer and bid curves given initial allocations. Spare water (above full
+// need) is offered at any price; water a farmer could use is offered at the
+// threshold; a shortfall is bid for at the threshold.
+function toSteps(list) { let x = 0; return list.map(o => { const s = { x0:x, x1:x+o.q, y:o.y, i:o.i, spare:!!o.spare }; x += o.q; return s; }); }
+function shift(steps, dx) { return steps.map(s => ({ ...s, x0:s.x0+dx, x1:s.x1+dx })); }
+function curves(ids, al) {
+  const off = [], bid = [];
+  for (const i of ids) {
+    const f = FARMERS[i], sp = Math.max(0, al[i]-f.need), us = Math.min(al[i], f.need), df = Math.max(0, f.need-al[i]);
+    if (sp > EPS) off.push({ q:sp, y:0, i, spare:true });
+    if (us > EPS) off.push({ q:us, y:f.thr, i });
+    if (df > EPS) bid.push({ q:df, y:f.thr, i });
+  }
+  off.sort((a,b) => a.y-b.y || b.i-a.i);
+  bid.sort((a,b) => b.y-a.y || a.i-b.i);
+  return { S:toSteps(off), D:toSteps(bid) };
+}
+
+function computeMarket(farmW, method) {
+  const al = getAllocs(farmW, method), nt = noTradeFin(al), m = clearMarket(ALL, farmW);
+  const sNT = summarize(ALL, al, nt, 0), sTR = summarize(ALL, al, m.fin, m.price);
+  const cv = curves(ALL, al);
+  return { al, fin:m.fin, P:m.price, unused:m.unused, sNT, sTR,
+           spec:{ S:cv.S, D:cv.D, eq:{ q:sTR.bought, p:m.price }, gains:true, labels:{ S:'Supply', D:'Demand' } } };
+}
+
+function zoneSpec(ids, al, fin, p, xOut, other, otherP) {
+  const cv = curves(ids, al);
+  let buys = 0; for (const i of ids) buys += Math.max(0, fin[i]-al[i]);
+  const spec = { S:cv.S, D:cv.D, eq:{ q:buys, p }, labels:{ S:'Supply', D:'Demand' } };
+  if (xOut > EPS) {
+    spec.Dfaint = cv.D; spec.D = shift(cv.D, xOut); spec.eq.q = buys + xOut;
+    spec.block = { side:'D', q:xOut, label:`Sold to the ${other}: ${fmt(xOut)} ML` };
+  } else if (xOut < -EPS) {
+    spec.Sfaint = cv.S; spec.S = shift(cv.S, -xOut);
+    spec.block = { side:'S', q:-xOut, label:`Bought from the ${other}: ${fmt(-xOut)} ML` };
+  }
+  if (Math.abs(otherP - p) > EPS) spec.refLine = { y:otherP, label:`${other[0].toUpperCase()+other.slice(1)} price $${fmt(otherP)}` };
+  return spec;
+}
+
+// K = most water that can be traded from north to south.
+function computeChoke(farmW, method, K) {
+  const al = getAllocs(farmW, method), nt = noTradeFin(al), uni = clearMarket(ALL, farmW);
+  const wN = NORTH_IDS.reduce((s,i) => s+al[i], 0), wS = farmW - wN;
+  let flowU;
+  if (uni.unused > 0) {   // water is not scarce: only shortfalls that cannot be met locally need to cross
+    const gap = ids => ids.reduce((s,i) => s + FARMERS[i].need - al[i], 0);
+    flowU = Math.max(0, gap(SOUTH_IDS)) - Math.max(0, gap(NORTH_IDS));
+  } else flowU = SOUTH_IDS.reduce((s,i) => s + uni.fin[i] - al[i], 0);
+  const binding = flowU > K + EPS;
+  let fin = uni.fin, pN = uni.price, pS = uni.price, flow = flowU;
+  if (binding) {
+    const n = clearMarket(NORTH_IDS, wN - K), s = clearMarket(SOUTH_IDS, wS + K);
+    fin = n.fin.map((v,i) => v + s.fin[i]); pN = n.price; pS = s.price; flow = K;
+  }
+  const part = (f, pn, ps) => ({ N:summarize(NORTH_IDS, al, f, pn), S:summarize(SOUTH_IDS, al, f, ps) });
+  return { al, fin, pN, pS, flow, flowU, binding, pU:uni.price,
+           nt:part(nt,0,0), ch:part(fin,pN,pS), un:part(uni.fin,uni.price,uni.price),
+           specN:zoneSpec(NORTH_IDS, al, fin, pN,  flow, 'south', pS),
+           specS:zoneSpec(SOUTH_IDS, al, fin, pS, -flow, 'north', pN) };
+}
+
+
+// A reserve of R (taken before allocation) plus a buyback of B (bought in the
+// market). Two views: all water, and traded water.
+function computeMix(W, R, B, method) {
+  const al = getAllocs(W-R, method), base = clearMarket(ALL, W), pol = clearMarket(ALL, W-R-B);
+  const P = pol.price, on = B > EPS;
+  const sBase = summarize(ALL, getAllocs(W, method), base.fin, base.price);
+  const sMix = summarize(ALL, al, pol.fin, P);
+  const sRes = summarize(ALL, getAllocs(W-R-B, method), pol.fin, P);
+  const sBuy = summarize(ALL, getAllocs(W, method), pol.fin, P);
+  const cv = curves(ALL, al);
+  const block = on ? { side:'D', q:B, label:`Government buys ${fmt(B)} ML` } : null;
+  const labels = { S:'Supply', D:'Demand' };
+  const specTrade = { S:cv.S, D:on ? shift(cv.D, B) : cv.D, Dfaint:on ? cv.D : null, block, eq:{ q:sMix.bought + B, p:P }, labels };
+  // farmers' demand for water to use: every farm's full need at its threshold, whatever it was allocated
+  const use = toSteps(ALL.slice().sort((a,b) => FARMERS[b].thr - FARMERS[a].thr || a-b).map(i => ({ q:FARMERS[i].need, y:FARMERS[i].thr, i })));
+  const specTotal = { S:[], Sv:W-R, D:on ? shift(use, B) : use, Dfaint:on ? use : null, useMode:true, block,
+                      shade:R > EPS ? { x0:W-R, x1:W, label:`Reserved: ${fmt(R)} ML` } : null,
+                      eq:{ q:W-R, p:P, qLabel:`${fmt(W-R)} ML allocated` }, labels };
+  return { al, fin:pol.fin, P, P0:base.price, sBase, sMix, sRes, sBuy, costMix:B*P, costBuy:(R+B)*P, specTrade, specTotal,
+           ghostTotal:{ S:[], Sv:W, D:use, eq:{ q:W, p:base.price } }, ghostTrade:computeMarket(W, method).spec };
+}
+/*MODEL-END*/
+
+// ══════════════════════════════════════════════════════
+//  PAGE HELPERS
+// ══════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const money = n => (n < -0.5 ? '−$' : '$') + fmt(Math.abs(n));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const C_S = '#8c2d04', C_D = '#08306b', C_GHOST = '#aaa49a';
+Chart.defaults.font.family = 'Georgia, serif';
+Chart.defaults.font.size = 14;
+Chart.defaults.color = '#333';
+function textOn(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n>>16, g = (n>>8)&255, b = n&255;
+  return (0.299*r + 0.587*g + 0.114*b) > 150 ? '#111' : '#fff';
+}
+document.querySelectorAll('.cropkey').forEach(el => {
+  el.innerHTML = '<span>Coloured band along each curve = crop:</span>' +
+    CT.map(c => `<span><i class="sw" style="background:${c.color};"></i>${c.name}</span>`).join('');
+});
+
+// ══════════════════════════════════════════════════════
+//  TAB 1 — FARM TABLE
+// ══════════════════════════════════════════════════════
+const T1_ALLOC = 4;   // ML/HA
+const T1 = [
+  { crop:'Rice',    tag:'Low',  ml:12, ret:110 },
+  { crop:'Rice',    tag:'High', ml:12, ret:210 },
+  { crop:'Cotton',  tag:'Low',  ml:9,  ret:190 },
+  { crop:'Cotton',  tag:'High', ml:9,  ret:370 },
+  { crop:'Dairy',   tag:'',     ml:8,  ret:310 },
+  { crop:'Grapes',  tag:'',     ml:8,  ret:590 },
+  { crop:'Citrus',  tag:'',     ml:6,  ret:640 },
+  { crop:'Almonds', tag:'',     ml:14, ret:810 },
+];
+const T1_PRICES = [0,50,100,150,200,250,300,350,400,500,600,700,800,900];
+const t1Blank = () => T1_PRICES.map(() => T1.map(() => null));
+let t1Ans = t1Blank(), t1Marks = t1Blank(), t1Revealed = false, t1Chart = null;
+
+// true = irrigate, false = sell, 'either' = indifferent (price equals net return)
+function t1Correct(ci, pi) { const d = T1[ci].ret - T1_PRICES[pi]; return d > 0 ? true : d < 0 ? false : 'either'; }
+function t1Effective(ci, pi) {
+  const a = t1Ans[pi][ci];
+  if (a !== null || !t1Revealed) return a;
+  return t1Correct(ci, pi) !== false;
+}
+function t1Head() {
+  let r = '<tr><th class="left">Water price $/ML</th>';
+  for (let i = 0; i < T1.length; i++) {
+    let span = 1; while (i+span < T1.length && T1[i+span].crop === T1[i].crop) span++;
+    const col = CROP[T1[i].crop].color;
+    r += `<th colspan="${span}" style="background:${col};color:${textOn(col)};">${T1[i].crop}</th>`;
+    i += span-1;
+  }
+  $('farm-thead').innerHTML = r + '<th class="sale-h">ML<br>for sale</th><th class="buy-h">ML<br>to buy</th></tr>';
+}
+function t1Rows() {   // per price: totals from the cells filled in so far
+  return T1_PRICES.map((price, pi) => {
+    let sale = 0, buy = 0, full = true;
+    T1.forEach((c, ci) => {
+      const e = t1Effective(ci, pi);
+      if (e === null) { full = false; return; }
+      if (e) buy += (c.ml - T1_ALLOC) * HAF; else sale += T1_ALLOC * HAF;
+    });
+    return { price, sale, buy, full };
+  });
+}
+function t1Render() {
+  let h = '';
+  const meta = [
+    ['Net return in $/HA',  c => '$' + fmt(c.ret*c.ml), ''],
+    ['Water use (ML/HA)',  c => c.ml, ''],
+    ['Net return in $/ML',  c => '$' + c.ret, 'dpm'],
+  ];
+  meta.forEach(([lbl, fn, cls]) => {
+    h += `<tr class="meta-row"><td class="left">${lbl}</td>` + T1.map(c => `<td class="${cls}">${fn(c)}</td>`).join('') + '<td class="sale-c">—</td><td>—</td></tr>';
+  });
+  const rows = t1Rows();
+  T1_PRICES.forEach((price, pi) => {
+    h += `<tr><td class="price-col">$${price}</td>`;
+    T1.forEach((_, ci) => {
+      const a = t1Ans[pi][ci], e = t1Effective(ci, pi), m = t1Marks[pi][ci];
+      let cls = e === null ? 'blank' : e ? 'irr' : 'sell', lbl = e === null ? '·' : e ? 'irrigate' : 'sell';
+      if (a === null && e !== null) cls += ' shown';
+      if (m === 'ok')  { cls += ' ok';  lbl += ' ✓'; }
+      if (m === 'bad') { cls = 'dcell-bad'; lbl += ' ✗'; }
+      h += `<td><span class="dcell ${m === 'bad' ? 'bad' : cls}" onclick="t1Toggle(${pi},${ci})">${lbl}</span></td>`;
+    });
+    h += `<td class="sale-c">${rows[pi].full ? rows[pi].sale : '—'}</td><td class="buy-c">${rows[pi].full ? rows[pi].buy : '—'}</td></tr>`;
+  });
+  $('farm-tbody').innerHTML = h;
+  t1Draw(rows.filter(r => r.full));
+}
+function t1Toggle(pi, ci) {
+  if (t1Revealed) return;
+  const a = t1Ans[pi][ci];
+  t1Ans[pi][ci] = a === null ? true : a === true ? false : null;
+  t1Marks[pi][ci] = null;
+  t1Render();
+}
+function t1Check() {
+  let right = 0, total = 0;
+  T1_PRICES.forEach((_, pi) => T1.forEach((_, ci) => {
+    const a = t1Ans[pi][ci]; if (a === null) return;
+    const c = t1Correct(ci, pi), ok = c === 'either' || a === c;
+    total++; if (ok) right++;
+    t1Marks[pi][ci] = ok ? 'ok' : 'bad';
+  }));
+  t1Render();
+  $('score-line').textContent = !total ? 'Fill in some cells first.'
+    : `${right} of ${total} correct. ` + (right === total ? 'All correct so far.' : 'Wrong cells are marked ✗ with a dashed red border.');
+}
+function t1Reveal() { t1Revealed = true; t1Render(); $('score-line').textContent = 'Answers shown. Italic cells were not filled in by you.'; }
+function t1Reset() { t1Revealed = false; t1Ans = t1Blank(); t1Marks = t1Blank(); t1Render(); $('score-line').textContent = ''; }
+function t1Draw(rows) {
+  const sup = rows.map(r => ({ x:r.sale, y:r.price })), dem = rows.map(r => ({ x:r.buy, y:r.price }));
+  if (!t1Chart) {
+    t1Chart = new Chart($('t1Chart'), {
+      type:'scatter',
+      data:{ datasets:[
+        { label:'Supply (ML for sale)', data:[], borderColor:C_S, backgroundColor:C_S, showLine:true, borderWidth:3, pointRadius:5, pointStyle:'rect' },
+        { label:'Demand (ML to buy)',   data:[], borderColor:C_D, backgroundColor:C_D, showLine:true, borderWidth:3, pointRadius:5 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ labels:{ usePointStyle:true, font:{ size:14 } } },
+                  tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${fmt(c.raw.x)} ML at $${c.raw.y}/ML` } } },
+        scales:{ x:{ min:0, max:1000, title:{ display:true, text:'Water (ML)' } },
+                 y:{ min:0, max:900, title:{ display:true, text:'Price ($/ML)' }, ticks:{ callback:v => '$'+v } } } }
+    });
+  }
+  t1Chart.data.datasets[0].data = sup; t1Chart.data.datasets[1].data = dem; t1Chart.update();
+  let note = 'Each completed row adds one point to each curve. Tab 3 does the same thing with 470 farmers.';
+  for (let k = 1; k < rows.length; k++) {
+    const a = rows[k-1], b = rows[k];
+    if (a.sale < a.buy && b.sale >= b.buy) { note = `The curves cross between $${a.price} and $${b.price}: below that range buyers want more water than is for sale, above it there is more for sale than buyers want.`; break; }
+  }
+  $('t1-chart-note').textContent = note;
+}
+t1Head(); t1Render();
+
+// ══════════════════════════════════════════════════════
+//  TAB 2 — VALUE OF WATER (range plot)
+// ══════════════════════════════════════════════════════
+let diagChart = null;
+function buildDiag() {
+  if (diagChart) return;
+  const pts = [];
+  CT.forEach((ct, r) => {
+    const g = FARMERS.filter(f => f.crop === ct.name).sort((a,b) => a.rev-b.rev || a.thr-b.thr);
+    g.forEach((f, k) => pts.push({ f, y:r + 0.1 + 0.8*(g.length > 1 ? k/(g.length-1) : 0.5) }));
+  });
+  const ds = [];
+  CT.forEach(ct => {
+    const mine = pts.filter(p => p.f.crop === ct.name);
+    ds.push({ label:ct.name, data:mine.map(p => ({ x:p.f.rev, y:p.y, f:p.f, kind:'rev' })),
+              backgroundColor:ct.color, borderColor:'#333', borderWidth:.6, pointRadius:3.6, pointHoverRadius:6 });
+    if (!ct.annual) ds.push({ label:ct.name+' threshold', data:mine.map(p => ({ x:p.f.thr, y:p.y, f:p.f, kind:'thr' })),
+              backgroundColor:'#faf8f4', borderColor:ct.color, borderWidth:1.8, pointRadius:3.6, pointHoverRadius:6 });
+  });
+  const lines = {
+    id:'ranges',
+    beforeDatasetsDraw(chart) {
+      const c = chart.ctx, xs = chart.scales.x, ys = chart.scales.y, a = chart.chartArea;
+      c.save();
+      c.strokeStyle = '#cfc8ba'; c.lineWidth = 1;
+      for (let r = 1; r < CT.length; r++) { c.beginPath(); c.moveTo(a.left, ys.getPixelForValue(r)); c.lineTo(a.right, ys.getPixelForValue(r)); c.stroke(); }
+      c.lineWidth = 1; c.globalAlpha = .55;
+      pts.forEach(p => { if (!p.f.sc) return;
+        c.strokeStyle = CROP[p.f.crop].color; c.beginPath();
+        c.moveTo(xs.getPixelForValue(p.f.rev), ys.getPixelForValue(p.y)); c.lineTo(xs.getPixelForValue(p.f.thr), ys.getPixelForValue(p.y)); c.stroke(); });
+      c.restore();
+    }
+  };
+  diagChart = new Chart($('diagChart'), {
+    type:'scatter', data:{ datasets:ds },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ label:c => { const f = c.raw.f;
+          return f.sc ? `${f.name} (${f.crop.toLowerCase()}): net return $${f.rev}/ML, sells only above $${f.thr}/ML (switching cost $${f.sc})`
+                      : `${f.name} (${f.crop.toLowerCase()}): net return $${f.rev}/ML, sells above that price`; } } } },
+      scales:{
+        x:{ min:0, max:Y_MAX, title:{ display:true, text:'$ per ML' }, ticks:{ stepSize:100, callback:v => '$'+fmt(v) } },
+        y:{ min:0, max:CT.length, reverse:true, grid:{ display:false },
+            afterBuildTicks:ax => { ax.ticks = CT.map((_,i) => ({ value:i+0.5 })); },
+            ticks:{ font:{ size:15 }, callback:v => { const ct = CT[Math.floor(v)]; return ct ? [ct.name, `${ct.count} farms · ${ct.mlPerHA} ML/HA`] : ''; } } } } },
+    plugins:[lines]
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  SUPPLY & DEMAND CHART (shared by tabs 3–5)
+// ══════════════════════════════════════════════════════
+function curvePath(c, steps, X, Y, kind, lead) {
+  c.beginPath();
+  let xe = lead || 0;
+  if (kind === 'S') {
+    if (!steps.length && !lead) return false;
+    c.moveTo(X(0), Y(0)); if (lead) c.lineTo(X(lead), Y(0));
+    for (const s of steps) { c.lineTo(X(s.x0), Y(s.y)); c.lineTo(X(s.x1), Y(s.y)); xe = s.x1; }
+    c.lineTo(X(xe), Y(Y_MAX*2));
+  } else {
+    if (lead) c.moveTo(X(lead), Y(Y_MAX*2));
+    else if (steps.length) c.moveTo(X(0), Y(steps[0].y));
+    else return false;
+    for (const s of steps) { c.lineTo(X(s.x0), Y(s.y)); c.lineTo(X(s.x1), Y(s.y)); xe = s.x1; }
+    c.lineTo(X(xe), Y(0));
+  }
+  return true;
+}
+function haloText(c, txt, x, y, color, align, bold) {
+  c.font = `${bold ? '600 ' : ''}14px Georgia, serif`; c.textAlign = align || 'left'; c.textBaseline = 'alphabetic';
+  c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineJoin = 'round'; c.strokeText(txt, x, y);
+  c.fillStyle = color; c.fillText(txt, x, y);
+}
+function drawSD(chart, st) {
+  const sp = st.spec; if (!sp) return;
+  const c = chart.ctx, a = chart.chartArea, xs = chart.scales.x, ys = chart.scales.y;
+  const X = v => xs.getPixelForValue(v), Y = v => ys.getPixelForValue(v);
+  const leadS = sp.block && sp.block.side === 'S' ? sp.block.q : 0, leadD = sp.block && sp.block.side === 'D' ? sp.block.q : 0;
+  c.save(); c.beginPath(); c.rect(a.left, a.top, a.width, a.height); c.clip();
+
+  if (sp.shade) { c.fillStyle = 'rgba(110,190,110,.22)'; c.fillRect(X(sp.shade.x0), a.top, X(sp.shade.x1)-X(sp.shade.x0), a.height); }
+  if (sp.block) { c.fillStyle = 'rgba(40,150,150,.16)'; c.fillRect(X(0), a.top, X(sp.block.q)-X(0), a.height); }
+
+  // gains from trade: area between demand and supply up to the traded quantity
+  if (sp.gains && sp.eq.q > EPS && sp.D.length) {
+    const Q = sp.eq.q, cut = arr => arr.filter(s => s.x0 < Q).map(s => ({ ...s, x1:Math.min(s.x1, Q) }));
+    const d = cut(sp.D), s = cut(sp.S);
+    if (d.length && s.length) {
+      c.beginPath(); c.moveTo(X(0), Y(d[0].y));
+      d.forEach(t => { c.lineTo(X(t.x0), Y(t.y)); c.lineTo(X(t.x1), Y(t.y)); });
+      for (let k = s.length-1; k >= 0; k--) { c.lineTo(X(s[k].x1), Y(s[k].y)); c.lineTo(X(s[k].x0), Y(s[k].y)); }
+      c.closePath(); c.fillStyle = 'rgba(240,196,50,.40)'; c.fill();
+    }
+  }
+  // previous state
+  if (st.ghost) {
+    const g = st.ghost, gS = g.block && g.block.side === 'S' ? g.block.q : 0, gD = g.block && g.block.side === 'D' ? g.block.q : 0;
+    c.strokeStyle = C_GHOST; c.lineWidth = 1.6; c.setLineDash([]);
+    if (curvePath(c, g.S, X, Y, 'S', gS)) c.stroke();
+    if (g.Sv != null) { c.beginPath(); c.moveTo(X(g.Sv), a.bottom); c.lineTo(X(g.Sv), a.top); c.stroke(); }
+    if (curvePath(c, g.D, X, Y, 'D', gD)) c.stroke();
+    c.beginPath(); c.arc(X(g.eq.q), Y(g.eq.p), 6, 0, 7); c.fillStyle = '#faf8f4'; c.fill(); c.stroke();
+  }
+  // local-only curves
+  c.lineWidth = 1.5; c.setLineDash([5,4]);
+  if (sp.Sfaint) { c.strokeStyle = C_S; if (curvePath(c, sp.Sfaint, X, Y, 'S', 0)) c.stroke(); }
+  if (sp.Dfaint) { c.strokeStyle = C_D; if (curvePath(c, sp.Dfaint, X, Y, 'D', 0)) c.stroke(); }
+  c.setLineDash([]);
+  // crop bands: below the supply line, above the demand line
+  const band = (steps, below) => steps.forEach(s => {
+    const x0 = X(s.x0), w = Math.max(1, X(s.x1)-x0), y = Y(s.y);
+    c.fillStyle = CROP[FARMERS[s.i].crop].color;
+    c.fillRect(x0, (below && y+9 <= a.bottom) ? y+2.5 : y-8.5, w, 6);
+  });
+  band(sp.S, true); band(sp.D, false);
+  // main curves
+  c.lineWidth = 2.6; c.lineJoin = 'miter';
+  c.strokeStyle = C_S; if (curvePath(c, sp.S, X, Y, 'S', leadS)) c.stroke();
+  if (sp.Sv != null) { c.beginPath(); c.moveTo(X(sp.Sv), a.bottom); c.lineTo(X(sp.Sv), a.top); c.stroke(); }
+  c.strokeStyle = C_D; if (curvePath(c, sp.D, X, Y, 'D', leadD)) c.stroke();
+  // other zone's price
+  if (sp.refLine) {
+    c.strokeStyle = '#555'; c.lineWidth = 1.2; c.setLineDash([2,4]);
+    c.beginPath(); c.moveTo(a.left, Y(sp.refLine.y)); c.lineTo(a.right, Y(sp.refLine.y)); c.stroke(); c.setLineDash([]);
+    haloText(c, sp.refLine.label, a.right-8, Y(sp.refLine.y)-6, '#444', 'right');
+  }
+  // no-policy reference point
+  if (sp.refPoint) {
+    c.beginPath(); c.arc(X(sp.refPoint.q), Y(sp.refPoint.p), 6, 0, 7); c.fillStyle = '#fff'; c.fill();
+    c.strokeStyle = '#222'; c.lineWidth = 2; c.stroke();
+  }
+  // equilibrium
+  const ex = X(sp.eq.q), ey = Y(sp.eq.p);
+  c.strokeStyle = '#111'; c.lineWidth = 1.2; c.setLineDash([6,4]);
+  c.beginPath(); c.moveTo(a.left, ey); c.lineTo(ex, ey); c.lineTo(ex, a.bottom); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(ex, ey, 6.5, 0, 7); c.fillStyle = '#111'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+  // labels
+  const pTxt = `Price $${fmt(sp.eq.p)}/ML`, qTxt = sp.eq.qLabel || `${fmt(sp.eq.q)} ML sold`;
+  haloText(c, pTxt, ex+12, ey-10 < a.top+16 ? ey+20 : ey-10, '#111', 'left', true);
+  if (sp.eq.q > EPS) haloText(c, qTxt, ex+8, a.bottom-10, '#111', 'left', true);
+  const sEnd = sp.Sv != null ? sp.Sv : sp.S.length ? sp.S[sp.S.length-1].x1 : leadS;
+  if (sp.S.length || leadS || sp.Sv != null) {
+    c.font = '600 14px Georgia, serif'; const w = c.measureText(sp.labels.S).width;
+    const sx = Math.min(X(sEnd), a.right), right = sx+8+w < a.right;
+    haloText(c, sp.labels.S, right ? sx+8 : sx-8, a.top+18, C_S, right ? 'left' : 'right', true);
+  }
+  if (sp.D.length || leadD) {
+    const dx = leadD ? X(leadD)+14 : a.left+10, dy = leadD ? a.top+42 : Math.max(a.top+18, Y(sp.D[0].y)-12);
+    haloText(c, sp.labels.D, dx, dy, C_D, 'left', true);
+  }
+  if (sp.shade) haloText(c, sp.shade.label, X(sp.shade.x0)+8, a.top+44, '#1d5a1d', 'left', true);
+  if (sp.block) haloText(c, sp.block.label, a.left+8, sp.block.side === 'D' ? a.top+20 : a.bottom-30, '#0b4a4a', 'left', true);
+  c.restore();
+}
+function stepAt(steps, x) { for (const s of steps) if (x >= s.x0 && x < s.x1) return s; return null; }
+function makeSD(canvasId, xStep, xTitle) {
+  const canvas = $(canvasId), wrap = canvas.parentElement, st = { spec:null, ghost:null };
+  const tip = document.createElement('div'); tip.className = 'tip'; wrap.appendChild(tip);
+  const chart = new Chart(canvas, {
+    type:'scatter', data:{ datasets:[] },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, events:[],
+      plugins:{ legend:{ display:false }, tooltip:{ enabled:false } },
+      scales:{ x:{ type:'linear', min:0, max:60000, title:{ display:true, text:xTitle || 'Water offered for sale / wanted (ML)' }, ticks:{ callback:v => fmt(v) } },
+               y:{ type:'linear', min:0, max:Y_MAX, title:{ display:true, text:'Price ($/ML)' }, ticks:{ callback:v => '$'+fmt(v) } } } },
+    plugins:[{ id:'sd', afterDraw:ch => drawSD(ch, st) }]
+  });
+  canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  canvas.addEventListener('mousemove', e => {
+    const sp = st.spec, r = canvas.getBoundingClientRect(), px = e.clientX-r.left, py = e.clientY-r.top, a = chart.chartArea;
+    if (!sp || px < a.left || px > a.right || py < a.top || py > a.bottom) { tip.style.display = 'none'; return; }
+    const xv = chart.scales.x.getValueForPixel(px), s = stepAt(sp.S, xv), d = stepAt(sp.D, xv), rows = [];
+    const who = t => { const f = FARMERS[t.i]; return `${f.name} (${f.crop.toLowerCase()})`; };
+    if (sp.block && xv < sp.block.q) rows.push(`<b class="${sp.block.side === 'S' ? 's' : 'd'}">${sp.block.label}</b> at any price`);
+    if (s) rows.push(`<b class="s">Supply:</b> ${who(s)} ` + (s.spare ? `has ${fmt(s.x1-s.x0)} ML to spare and sells at any price` : `would sell ${fmt(s.x1-s.x0)} ML above $${fmt(s.y)}/ML`));
+    if (sp.Sv != null) rows.push(`<b class="s">Supply:</b> ${fmt(sp.Sv)} ML is allocated to farmers, whatever the price`);
+    if (d) rows.push(`<b class="d">Demand:</b> ${who(d)} ` + (sp.useMode ? `can use ${fmt(d.x1-d.x0)} ML` : `wants ${fmt(d.x1-d.x0)} ML more`) + ` and pays up to $${fmt(d.y)}/ML`);
+    if (!rows.length) { tip.style.display = 'none'; return; }
+    tip.innerHTML = `At ${fmt(xv)} ML<br>` + rows.join('<br>');
+    tip.style.display = 'block';
+    const cx = canvas.offsetLeft + px, cy = canvas.offsetTop + py;
+    tip.style.left = (cx + 16 + tip.offsetWidth > wrap.clientWidth ? cx - 16 - tip.offsetWidth : cx + 16) + 'px';
+    tip.style.top = Math.max(0, cy - tip.offsetHeight - 10) + 'px';
+  });
+  return {
+    set(spec, ghost, xMax) { st.spec = spec; st.ghost = ghost || null; chart.options.scales.x.max = xMax || sdMax([spec, ghost], xStep); chart.update('none'); },
+    resize() { chart.resize(); }
+  };
+}
+function sdMax(specs, step) {
+  let m = 0;
+  specs.forEach(s => { if (!s) return; [s.S, s.D].forEach(arr => { if (arr && arr.length) m = Math.max(m, arr[arr.length-1].x1); }); if (s.block) m = Math.max(m, s.block.q); if (s.Sv != null) m = Math.max(m, s.Sv); });
+  return Math.max(step, Math.ceil(m*1.1/step)*step);
+}
+
+// ══════════════════════════════════════════════════════
+//  SHARED STATE AND CONTROLS (tabs 3–5 use the same scenario)
+// ══════════════════════════════════════════════════════
+const S = { TW:60000, EW:0, BB:0, method:'equal', K:2000 };
+let PREV = null, ACTIVE = 'farm', rafId = 0;
+const snap = () => { PREV = { ...S }; };
+const changed = keys => PREV && keys.some(k => PREV[k] !== S[k]);
+const maxEW = () => Math.floor(S.TW*0.5/500)*500;
+const maxBB = () => Math.max(0, Math.floor((S.TW*0.5 - S.EW)/500)*500);   // reserve + buyback is capped at half the water
+function setTW(v) { S.TW = clamp(Math.round(v/1000)*1000, MINW, MAXW); S.EW = clamp(S.EW, 0, maxEW()); S.BB = clamp(S.BB, 0, maxBB()); }
+function setEW(v) { S.EW = clamp(Math.round(v/500)*500, 0, maxEW()); S.BB = clamp(S.BB, 0, maxBB()); }
+function setBB(v) { S.BB = clamp(Math.round(v/500)*500, 0, maxBB()); }
+function schedule() { if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; renderActive(); }); }
+
+function syncControls() {
+  const mix = ACTIVE === 'mix', B = mix ? S.BB : 0;
+  const eF = S.EW/MAXW, bF = B/MAXW, tF = S.TW/MAXW, farmW = S.TW - S.EW, keep = farmW - B, pct = v => (v*100).toFixed(3)+'%';
+  const lab = (v, name, full) => v >= full ? `${name} ${fmt(v)} ML` : v >= 9000 ? `${fmt(v)} ML` : '';
+  $('benv').style.width = pct(eF);
+  $('bbuy').style.left = pct(eF);    $('bbuy').style.width = pct(bF);
+  $('bfarm').style.left = pct(eF+bF); $('bfarm').style.width = pct(tF-eF-bF);
+  $('bemp').style.left = pct(tF);    $('bemp').style.width = pct(1-tF);
+  // on tab 5 the reserve and buyback handles sit side by side so both can be grabbed at zero
+  $('dh-env').style.left = `calc(${pct(eF)} - ${mix ? 16 : 8}px)`; $('dh-env').style.background = mix ? 'rgba(25,95,35,.85)' : '';
+  $('dh-bb').style.left = `calc(${pct(eF+bF)})`; $('dh-bb').style.background = 'rgba(10,85,85,.9)'; $('dh-bb').style.display = mix ? 'flex' : 'none';
+  $('dh-tot').style.left = `calc(${pct(tF)} - 8px)`;
+  $('need-mark').style.left = pct(TOTAL_NEED/MAXW); $('need-lbl').style.left = pct(TOTAL_NEED/MAXW);
+  $('need-lbl').textContent = `Full irrigation of every farm needs ${fmt(TOTAL_NEED)} ML ▾`;
+  $('benv-l').textContent = lab(S.EW, 'Reserve', 18000);
+  $('bbuy-l').textContent = lab(B, 'Buyback', 18000);
+  $('bfarm-l').textContent = lab(keep, mix ? 'Farmers keep' : 'Farmers', 23000);
+  $('bemp-l').textContent = S.TW <= 70000 ? '← drag to add water' : '';
+  $('ew-label').textContent = mix ? 'Reserve (ML):' : 'Environmental reserve (ML):';
+  $('bb-wrap').style.display = mix ? 'flex' : 'none';
+  $('tw').value = S.TW; $('ew').value = S.EW; $('bbw').value = S.BB; $('method').value = S.method;
+  const perHA = w => (w/NF/HAF).toFixed(1), how = S.method === 'equal'
+    ? 'Every farmer starts with the same amount.'
+    : 'Rice and cotton farms start with roughly three to five times the water of perennial farms, whatever each crop needs.';
+  $('ctl-summary').textContent = mix
+    ? `${fmt(S.EW)} ML is reserved (green handle), farmers are allocated ${fmt(farmW)} ML (${perHA(farmW)} ML/HA on average), and the government buys ${fmt(B)} ML of that in the market (teal handle). ${how}`
+    : `Farmers are allocated ${fmt(farmW)} ML (${perHA(farmW)} ML/HA on average)` + (S.EW ? ` after ${fmt(S.EW)} ML is reserved for the environment. ` : '. ') + how;
+}
+function mkDrag(handleId, fn) {
+  const h = $(handleId); let on = false;
+  h.addEventListener('pointerdown', e => { on = true; snap(); h.setPointerCapture(e.pointerId); e.preventDefault(); });
+  h.addEventListener('pointermove', e => { if (!on) return; const r = $('abar').getBoundingClientRect(); fn(clamp((e.clientX-r.left)/r.width, 0, 1)*MAXW); schedule(); });
+  const end = () => { on = false; };
+  h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+}
+mkDrag('dh-tot', setTW); mkDrag('dh-env', setEW); mkDrag('dh-bb', v => setBB(v - S.EW));
+$('bbw').addEventListener('change', e => { snap(); setBB(parseInt(e.target.value) || 0); renderActive(); });
+$('tw').addEventListener('change', e => { snap(); setTW(parseInt(e.target.value) || S.TW); renderActive(); });
+$('ew').addEventListener('change', e => { snap(); setEW(parseInt(e.target.value) || 0); renderActive(); });
+$('method').addEventListener('change', e => { snap(); S.method = e.target.value; renderActive(); });
+(() => { let live = false; const k = $('choke-k');
+  k.addEventListener('input', () => { if (!live) { snap(); live = true; } S.K = +k.value; schedule(); });
+  k.addEventListener('change', () => { live = false; });
+})();
+
+function renderActive() {
+  if (ACTIVE !== 'farm' && ACTIVE !== 'diag') syncControls();
+  if (ACTIVE === 'market') renderMarket();
+  if (ACTIVE === 'choke') renderChoke();
+  if (ACTIVE === 'mix') renderMix();
+}
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  $('tab-'+name).classList.add('active'); btn.classList.add('active');
+  ACTIVE = name; PREV = null;
+  $('controls').style.display = (name === 'farm' || name === 'diag') ? 'none' : 'block';
+  document.querySelectorAll('.tabnote').forEach(el => { el.style.display = el.id === 'callout-'+name ? 'block' : 'none'; });
+  if (name === 'diag') buildDiag();
+  renderActive();
+}
+const chg = (a, b) => { const d = b-a; return (d >= 0 ? '+' : '−') + '$' + fmt(Math.abs(d)) + (a > 0 ? ` <small>(${d >= 0 ? '+' : '−'}${Math.abs(d/a*100).toFixed(1)}%)</small>` : ''); };
+
+// ── Tab 3: market ──────────────────────────────────────
+let mktChart = null;
+function renderMarket() {
+  const farmW = S.TW - S.EW, r = computeMarket(farmW, S.method), a = r.sNT, b = r.sTR;
+  $('eq-price').textContent = '$'+fmt(r.P)+'/ML';
+  $('eq-traded').textContent = fmt(b.bought)+' ML';
+  $('eq-sellers').textContent = b.bought <= EPS ? 0 : r.P > 0 ? b.sellers : b.sellers + ' with spare';
+  $('eq-buyers').textContent = b.buyers;
+  $('eq-gains').textContent = money(b.total - a.total);
+  if (!mktChart) mktChart = makeSD('mktChart', 10000);
+  mktChart.set(r.spec, changed(['TW','EW','method']) ? computeMarket(PREV.TW-PREV.EW, PREV.method).spec : null);
+  $('m-s0').textContent = money(a.seasonal); $('m-s1').textContent = money(b.seasonal); $('m-sc').innerHTML = chg(a.seasonal, b.seasonal);
+  $('m-a0').textContent = money(a.assets);   $('m-a1').textContent = money(b.assets);   $('m-ac').innerHTML = chg(a.assets, b.assets);
+  $('m-t0').textContent = money(a.total);    $('m-t1').textContent = money(b.total);    $('m-tc').innerHTML = chg(a.total, b.total);
+  $('m-u0').textContent = fmt(a.used); $('m-u1').textContent = fmt(b.used);
+  $('m-uc').textContent = Math.abs(b.used-a.used) < 0.5 ? '0' : (b.used > a.used ? '+' : '−') + fmt(Math.abs(b.used-a.used));
+  renderRoster('mkt-roster', r.al, r.fin, r.P);
+}
+
+// ── Tab 4: Barmah Choke ────────────────────────────────
+let northChart = null, southChart = null;
+function renderChoke() {
+  const farmW = S.TW - S.EW, r = computeChoke(farmW, S.method, S.K);
+  $('choke-k').value = S.K; $('choke-k-out').textContent = fmt(S.K)+' ML';
+  $('n-sub').textContent = `${NORTH_IDS.length} farms · mostly rice and cotton`;
+  $('s-sub').textContent = `${SOUTH_IDS.length} farms · mostly grapes, citrus and almonds`;
+  const gap = r.pS - r.pN;
+  $('choke-note').innerHTML = r.binding
+    ? `<strong>The choke binds.</strong> A single market would trade ${fmt(r.flowU)} ML from north to south, but only ${fmt(S.K)} ML can cross. The south pays $${fmt(gap)}/ML more than the north; that gap is what one more ML of choke capacity would be worth.`
+    : `<strong>The choke does not bind.</strong> A single market would trade ${fmt(Math.max(0, r.flowU))} ML from north to south, within the ${fmt(S.K)} ML capacity, so both zones pay the same price. Lower the capacity, reduce the water available, or switch to legacy entitlements to make it bind.`;
+  $('n-price').textContent = '$'+fmt(r.pN)+'/ML'; $('s-price').textContent = '$'+fmt(r.pS)+'/ML';
+  const sold = (z, p, out) => p > 0 ? z.sold : z.bought + Math.max(0, out);
+  $('n-sold').textContent = fmt(sold(r.ch.N, r.pN, r.flow))+' ML';  $('n-bought').textContent = fmt(r.ch.N.bought)+' ML';
+  $('s-sold').textContent = fmt(sold(r.ch.S, r.pS, -r.flow))+' ML'; $('s-bought').textContent = fmt(r.ch.S.bought)+' ML';
+  if (!northChart) { northChart = makeSD('northChart', 5000); southChart = makeSD('southChart', 5000); }
+  northChart.set(r.specN, null, Math.max(40000, sdMax([r.specN], 5000)));
+  southChart.set(r.specS, null, 40000);
+  $('c-h1').textContent = `Trade with the choke (${fmt(S.K)} ML)`;
+  $('c-pn1').textContent = '$'+fmt(r.pN); $('c-ps1').textContent = '$'+fmt(r.pS);
+  $('c-pn2').textContent = '$'+fmt(r.pU); $('c-ps2').textContent = '$'+fmt(r.pU);
+  $('c-f1').textContent = fmt(r.flow); $('c-f2').textContent = fmt(r.flowU);
+  [['0', r.nt], ['1', r.ch], ['2', r.un]].forEach(([k, z]) => {
+    $('c-vn'+k).textContent = money(z.N.total); $('c-vs'+k).textContent = money(z.S.total); $('c-vt'+k).textContent = money(z.N.total + z.S.total);
+  });
+  const tot = z => z.N.total + z.S.total, cost = tot(r.un) - tot(r.ch), gainsU = tot(r.un) - tot(r.nt);
+  $('c-cost').innerHTML = money(cost) + (cost > 0.5 && gainsU > 0 ? ` <small>(${(cost/gainsU*100).toFixed(0)}% of the gains from trade)</small>` : '');
+}
+
+// ── Tab 5: reserve vs buyback ──────────────────────────
+let mixTotal = null, mixTrade = null;
+function renderMix() {
+  const W = S.TW, R = S.EW, B = S.BB, E = R + B, r = computeMix(W, R, B, S.method);
+  if (!mixTotal) { mixTotal = makeSD('mixTotalChart', 10000, 'All water (ML)'); mixTrade = makeSD('mixTradeChart', 10000); }
+  mixTotal.set(r.specTotal, r.ghostTotal, Math.max(MAXW, Math.ceil((TOTAL_NEED + B)*1.05/10000)*10000));
+  mixTrade.set(r.specTrade, r.ghostTrade);
+  const parts = [];
+  if (R) parts.push(`<strong>Reserve of ${fmt(R)} ML.</strong> All water: the supply line moves left by ${fmt(R)} ML and demand stays put. Traded water: with smaller allocations, farmers offer less and bid for more, so both curves move.`);
+  if (B) parts.push(`<strong>Buyback of ${fmt(B)} ML.</strong> In both graphs supply stays put and demand moves right by ${fmt(B)} ML: the government is one more buyer.`);
+  $('mix-note').innerHTML = !E
+    ? 'Drag the green handle to reserve water, the teal handle to have the government buy water, or do both. Grey lines show the market with no environmental water.'
+    : parts.join('<br>') + `<br><strong>Result.</strong> Farms are left with ${fmt(W-E)} ML and the price ` + (r.P !== r.P0 ? `goes from $${fmt(r.P0)} to $${fmt(r.P)}/ML` : `stays at $${fmt(r.P)}/ML`)
+      + `. Any other split of the same ${fmt(E)} ML gives the same price and the same farm production; only the government's bill and farmer income differ.`;
+  $('x-h1').innerHTML = `Your mix<br><small style="color:#d8e4dc;">reserve ${fmt(R)} + buyback ${fmt(B)}</small>`;
+  $('x-h2').innerHTML = `All by reserve<br><small style="color:#d8e4dc;">reserve ${fmt(E)}</small>`;
+  $('x-h3').innerHTML = `All by buyback<br><small style="color:#d8e4dc;">buyback ${fmt(E)}</small>`;
+  $('x-p0').textContent = '$'+fmt(r.P0); ['1','2','3'].forEach(k => { $('x-p'+k).textContent = '$'+fmt(r.P); $('x-e'+k).textContent = fmt(E); });
+  [['0', r.sBase], ['1', r.sMix], ['2', r.sRes], ['3', r.sBuy]].forEach(([k, z]) => {
+    $('x-u'+k).textContent = fmt(z.used); $('x-s'+k).textContent = money(z.seasonal); $('x-i'+k).textContent = money(z.income);
+  });
+  $('x-c1').textContent = money(r.costMix); $('x-c3').textContent = money(r.costBuy);
+  renderRoster('mix-roster', r.al, r.fin, r.P);
+}
+
+// ── Farmer roster ──────────────────────────────────────
+function toggleRoster(el, id) {
+  const open = $(id).classList.toggle('open');
+  el.querySelector('.roster-caret').classList.toggle('open', open);
+  if (open) renderActive();
+}
+function renderRoster(id, al, fin, P) {
+  const el = $(id); if (!el.classList.contains('open')) return;
+  const head = '<div class="roster-head"><span>Farmer</span><span>Sells above</span><span>Trade (ML/HA)</span><span class="r-earn">Income</span></div>';
+  let h = '';
+  CT.forEach(ct => {
+    const g = ALL.filter(i => FARMERS[i].crop === ct.name).sort((a,b) => FARMERS[a].thr - FARMERS[b].thr);
+    h += `<div class="roster-sec" style="border-left:8px solid ${ct.color};">${ct.name} <span>(${g.length} farmers · ${ct.annual ? 'annual' : 'perennial'} · ${ct.mlPerHA} ML/HA)</span></div>` + head.repeat(3);
+    g.forEach(i => {
+      const f = FARMERS[i], net = fin[i]-al[i], q = (Math.abs(net)/HAF).toFixed(1);
+      const [cls, lbl] = net > 0.01 ? ['buy', 'Buy '+q] : net < -0.01 ? ['sell', (P > 0 ? 'Sell ' : 'Spare ')+q] : ['hold', 'Hold'];
+      h += `<div class="roster-row"><span class="r-name" title="${f.name}">${f.name}</span><span>$${fmt(f.thr)}</span><span class="${cls}">${lbl}</span><span class="r-earn">${money(fin[i]*f.rev - net*P)}</span></div>`;
+    });
+    for (let k = g.length; k % 3; k++) h += '<div class="roster-row"></div>';
+  });
+  el.innerHTML = `<div class="roster-grid">${h}</div>`;
+}
+</script>
+</body>
+</html>
